@@ -68,4 +68,31 @@ class ResumeService {
         .snapshots()
         .map((snapshot) => snapshot.exists ? snapshot.data() : null);
   }
+
+  // Update profile details manually
+  Future<void> updateProfile({
+    String? name,
+    String? location,
+  }) async {
+    final user = _auth.currentUser;
+    if (user == null) return;
+
+    try {
+      final Map<String, dynamic> updateData = {};
+      if (name != null) updateData['name'] = name;
+      if (location != null) updateData['location'] = location;
+
+      if (updateData.isNotEmpty) {
+        await _db
+            .collection('users')
+            .doc(user.uid)
+            .collection('resumes')
+            .doc('latest')
+            .update(updateData);
+      }
+      debugPrint('Profile updated successfully');
+    } catch (e) {
+      debugPrint('Error updating profile: $e');
+    }
+  }
 }

@@ -159,6 +159,7 @@ class _JobsScreenState extends State<JobsScreen> {
     int score = job['matchScore'];
 
     return Container(
+      height: 220, // Added fixed height for mobile consistency
       margin: const EdgeInsets.only(bottom: 16),
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(

@@ -8,7 +8,8 @@ import 'interview_screen.dart';
 import '../services/resume_service.dart';
 
 class MainDashboardScreen extends StatefulWidget {
-  const MainDashboardScreen({super.key});
+  final bool isJobSeeker;
+  const MainDashboardScreen({super.key, this.isJobSeeker = true});
 
   @override
   State<MainDashboardScreen> createState() => _MainDashboardScreenState();
@@ -17,7 +18,7 @@ class MainDashboardScreen extends StatefulWidget {
 class _MainDashboardScreenState extends State<MainDashboardScreen>
     with SingleTickerProviderStateMixin {
   int _selectedIndex = 0;
-  bool _isJobSeeker = true;
+  late bool _isJobSeeker;
   String _userName = ""; // Removed "Sarah" as default
   late AnimationController _bgAnimationController;
   StreamSubscription? _resumeSubscription;
@@ -25,6 +26,7 @@ class _MainDashboardScreenState extends State<MainDashboardScreen>
   @override
   void initState() {
     super.initState();
+    _isJobSeeker = widget.isJobSeeker;
     _bgAnimationController = AnimationController(
       vsync: this,
       duration: const Duration(seconds: 10),
@@ -118,11 +120,17 @@ class _MainDashboardScreenState extends State<MainDashboardScreen>
                   ],
                 ),
                 const SizedBox(height: 40),
-                _buildSidebarItem(0, Icons.dashboard_rounded, 'Dashboard'),
-                _buildSidebarItem(1, Icons.business_center_outlined, 'Jobs'),
-                _buildSidebarItem(2, Icons.description_outlined, 'Resume'),
-                _buildSidebarItem(3, Icons.video_call_outlined, 'Interview'),
-                _buildSidebarItem(4, Icons.person_outline, 'Profile'),
+                if (_isJobSeeker) ...[
+                  _buildSidebarItem(0, Icons.dashboard_rounded, 'Dashboard'),
+                  _buildSidebarItem(1, Icons.business_center_outlined, 'Jobs'),
+                  _buildSidebarItem(2, Icons.description_outlined, 'Resume'),
+                  _buildSidebarItem(3, Icons.video_call_outlined, 'Interview'),
+                  _buildSidebarItem(4, Icons.person_outline, 'Profile'),
+                ] else ...[
+                  _buildSidebarItem(0, Icons.dashboard_rounded, 'Dashboard'),
+                  _buildSidebarItem(1, Icons.business_center_outlined, 'Job Postings'),
+                  _buildSidebarItem(2, Icons.business_outlined, 'Company'),
+                ],
                 const Spacer(),
                 Container(
                   padding: const EdgeInsets.all(16),
@@ -177,6 +185,29 @@ class _MainDashboardScreenState extends State<MainDashboardScreen>
   }
 
   Widget _buildSelectedScreen() {
+    if (!_isJobSeeker) {
+      switch (_selectedIndex) {
+        case 1:
+          return const Center(
+            child: Text(
+              "Job Postings Screen\n(Coming Soon)",
+              textAlign: TextAlign.center,
+              style: TextStyle(color: Colors.white, fontSize: 18),
+            ),
+          );
+        case 2:
+          return const Center(
+            child: Text(
+              "Company Profile Screen\n(Coming Soon)",
+              textAlign: TextAlign.center,
+              style: TextStyle(color: Colors.white, fontSize: 18),
+            ),
+          );
+        default:
+          return const EmployerDashboardScreen();
+      }
+    }
+
     switch (_selectedIndex) {
       case 1:
         return const JobsScreen();
@@ -205,9 +236,6 @@ class _MainDashboardScreenState extends State<MainDashboardScreen>
       case 4:
         return const ProfileScreen();
       default:
-        if (!_isJobSeeker) {
-          return const EmployerDashboardScreen();
-        }
         return Stack(
           children: [
             _buildLiveBackground(),
@@ -225,29 +253,8 @@ class _MainDashboardScreenState extends State<MainDashboardScreen>
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            mainAxisAlignment: MainAxisAlignment.end,
             children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.05),
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: Row(
-                  children: [
-                    _buildToggle(
-                      'Job Seeker',
-                      _isJobSeeker,
-                      () => setState(() => _isJobSeeker = true),
-                    ),
-                    _buildToggle(
-                      'Employer',
-                      !_isJobSeeker,
-                      () => setState(() => _isJobSeeker = false),
-                    ),
-                  ],
-                ),
-              ),
               Row(
                 children: [
                   CircleAvatar(
@@ -502,12 +509,7 @@ class _MainDashboardScreenState extends State<MainDashboardScreen>
             fontSize: 18,
           ),
         ),
-        actions: [
-          IconButton(
-            onPressed: () {},
-            icon: const Icon(Icons.menu, color: Colors.white),
-          ),
-        ],
+        actions: const [],
       ),
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _selectedIndexMap(_selectedIndex),
@@ -520,33 +522,51 @@ class _MainDashboardScreenState extends State<MainDashboardScreen>
         type: BottomNavigationBarType.fixed,
         selectedItemColor: const Color(0xFF6366F1),
         unselectedItemColor: Colors.grey,
-        items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.dashboard_outlined),
-            activeIcon: Icon(Icons.dashboard),
-            label: 'Dashboard',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.description_outlined),
-            activeIcon: Icon(Icons.description),
-            label: 'Resume',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.business_center_outlined),
-            activeIcon: Icon(Icons.business_center),
-            label: 'Jobs',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.video_call_outlined),
-            activeIcon: Icon(Icons.video_call),
-            label: 'Interview',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.person_outline),
-            activeIcon: Icon(Icons.person),
-            label: 'Profile',
-          ),
-        ],
+        items: _isJobSeeker
+            ? const [
+                BottomNavigationBarItem(
+                  icon: Icon(Icons.dashboard_outlined),
+                  activeIcon: Icon(Icons.dashboard),
+                  label: 'Dashboard',
+                ),
+                BottomNavigationBarItem(
+                  icon: Icon(Icons.description_outlined),
+                  activeIcon: Icon(Icons.description),
+                  label: 'Resume',
+                ),
+                BottomNavigationBarItem(
+                  icon: Icon(Icons.business_center_outlined),
+                  activeIcon: Icon(Icons.business_center),
+                  label: 'Jobs',
+                ),
+                BottomNavigationBarItem(
+                  icon: Icon(Icons.video_call_outlined),
+                  activeIcon: Icon(Icons.video_call),
+                  label: 'Interview',
+                ),
+                BottomNavigationBarItem(
+                  icon: Icon(Icons.person_outline),
+                  activeIcon: Icon(Icons.person),
+                  label: 'Profile',
+                ),
+              ]
+            : const [
+                BottomNavigationBarItem(
+                  icon: Icon(Icons.dashboard_outlined),
+                  activeIcon: Icon(Icons.dashboard),
+                  label: 'Dashboard',
+                ),
+                BottomNavigationBarItem(
+                  icon: Icon(Icons.business_center_outlined),
+                  activeIcon: Icon(Icons.business_center),
+                  label: 'Postings',
+                ),
+                BottomNavigationBarItem(
+                  icon: Icon(Icons.business_outlined),
+                  activeIcon: Icon(Icons.business),
+                  label: 'Company',
+                ),
+              ],
       ),
       body: _buildSelectedScreen(),
     );
@@ -554,6 +574,10 @@ class _MainDashboardScreenState extends State<MainDashboardScreen>
 
   // Maps unified _selectedIndex to mobile bottom nav index
   int _selectedIndexMap(int index) {
+    if (!_isJobSeeker) {
+      if (index > 2) return 0;
+      return index;
+    }
     if (index == 0) return 0; // Dashboard
     if (index == 2) return 1; // Resume
     if (index == 1) return 2; // Jobs
@@ -564,6 +588,7 @@ class _MainDashboardScreenState extends State<MainDashboardScreen>
 
   // Maps mobile bottom nav index back to unified _selectedIndex
   int _reverseIndexMap(int mobileIndex) {
+    if (!_isJobSeeker) return mobileIndex;
     if (mobileIndex == 0) return 0; // Dashboard
     if (mobileIndex == 1) return 2; // Resume
     if (mobileIndex == 2) return 1; // Jobs
@@ -603,28 +628,6 @@ class _MainDashboardScreenState extends State<MainDashboardScreen>
               ),
             ),
           ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildToggle(String label, bool isActive, VoidCallback onTap) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-        decoration: BoxDecoration(
-          color: isActive
-              ? Colors.white.withValues(alpha: 0.1)
-              : Colors.transparent,
-          borderRadius: BorderRadius.circular(8),
-        ),
-        child: Text(
-          label,
-          style: TextStyle(
-            fontWeight: isActive ? FontWeight.bold : FontWeight.normal,
-            color: isActive ? Colors.white : Colors.white60,
-          ),
         ),
       ),
     );

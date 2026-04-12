@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'dashboard_screen.dart';
 import 'login_screen.dart';
-import 'package:google_sign_in/google_sign_in.dart';
 import '../services/auth_service.dart';
 import '../widgets/google_sign_in/google_button.dart';
 
@@ -18,6 +17,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
   bool _isLoading = false;
+  bool _isJobSeeker = true;
   final AuthService _authService = AuthService();
 
   Future<void> _signUp() async {
@@ -38,11 +38,14 @@ class _SignUpScreenState extends State<SignUpScreen> {
 
     setState(() => _isLoading = true);
     try {
-      final userCredential = await _authService.signUpWithEmailPassword(email, password);
-      
+      final userCredential = await _authService.signUpWithEmailPassword(
+        email,
+        password,
+      );
+
       // Update display name
       await userCredential.user?.updateDisplayName(name);
-      
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -52,7 +55,9 @@ class _SignUpScreenState extends State<SignUpScreen> {
         );
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (_) => const MainDashboardScreen()),
+          MaterialPageRoute(
+            builder: (_) => MainDashboardScreen(isJobSeeker: _isJobSeeker),
+          ),
         );
       }
     } catch (e) {
@@ -68,20 +73,24 @@ class _SignUpScreenState extends State<SignUpScreen> {
     try {
       setState(() => _isLoading = true);
       final userCredential = await _authService.signInWithGoogle();
-      
+
       if (userCredential != null && userCredential.user != null) {
         final user = userCredential.user!;
         debugPrint('Google Sign Up Success: ${user.email}');
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('Account created with Google: ${user.displayName ?? "User"}!'),
+              content: Text(
+                'Account created with Google: ${user.displayName ?? "User"}!',
+              ),
               backgroundColor: Colors.green,
             ),
           );
           Navigator.pushReplacement(
             context,
-            MaterialPageRoute(builder: (_) => const MainDashboardScreen()),
+            MaterialPageRoute(
+              builder: (_) => MainDashboardScreen(isJobSeeker: _isJobSeeker),
+            ),
           );
         }
       }
@@ -99,7 +108,6 @@ class _SignUpScreenState extends State<SignUpScreen> {
       if (mounted) setState(() => _isLoading = false);
     }
   }
-
 
   void _showDialog(String title, String message) {
     showDialog(
@@ -155,7 +163,11 @@ class _SignUpScreenState extends State<SignUpScreen> {
                     ),
                   ],
                 ),
-                child: const Icon(Icons.auto_awesome, color: Colors.white, size: 40),
+                child: const Icon(
+                  Icons.auto_awesome,
+                  color: Colors.white,
+                  size: 40,
+                ),
               ),
               const SizedBox(height: 32),
               const Text(
@@ -170,10 +182,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
               const SizedBox(height: 8),
               const Text(
                 'Start your journey today and unlock your potential.',
-                style: TextStyle(
-                  fontSize: 16,
-                  color: Color(0xFF64748B),
-                ),
+                style: TextStyle(fontSize: 16, color: Color(0xFF64748B)),
               ),
               const SizedBox(height: 40),
               // Main Card
@@ -194,6 +203,43 @@ class _SignUpScreenState extends State<SignUpScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    const Text(
+                      'I am a:',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFF1E293B),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    Container(
+                      padding: const EdgeInsets.all(4),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF1F5F9),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: _buildRoleButton(
+                              'Job Seeker',
+                              Icons.person_search_outlined,
+                              _isJobSeeker,
+                              () => setState(() => _isJobSeeker = true),
+                            ),
+                          ),
+                          Expanded(
+                            child: _buildRoleButton(
+                              'Employer',
+                              Icons.business_center_outlined,
+                              !_isJobSeeker,
+                              () => setState(() => _isJobSeeker = false),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 24),
                     _buildInputField(
                       label: 'Full Name',
                       controller: _nameController,
@@ -235,7 +281,9 @@ class _SignUpScreenState extends State<SignUpScreen> {
                           borderRadius: BorderRadius.circular(12),
                           boxShadow: [
                             BoxShadow(
-                              color: const Color(0xFF3B26F2).withValues(alpha: 0.3),
+                              color: const Color(
+                                0xFF3B26F2,
+                              ).withValues(alpha: 0.3),
                               blurRadius: 15,
                               offset: const Offset(0, 8),
                             ),
@@ -251,7 +299,9 @@ class _SignUpScreenState extends State<SignUpScreen> {
                             ),
                           ),
                           child: _isLoading
-                              ? const CircularProgressIndicator(color: Colors.white)
+                              ? const CircularProgressIndicator(
+                                  color: Colors.white,
+                                )
                               : const Text(
                                   'Create Account',
                                   style: TextStyle(
@@ -271,7 +321,10 @@ class _SignUpScreenState extends State<SignUpScreen> {
                           padding: EdgeInsets.symmetric(horizontal: 16),
                           child: Text(
                             'Or continue with',
-                            style: TextStyle(color: Color(0xFF94A3B8), fontSize: 13),
+                            style: TextStyle(
+                              color: Color(0xFF94A3B8),
+                              fontSize: 13,
+                            ),
                           ),
                         ),
                         Expanded(child: Divider(color: Colors.grey[200])),
@@ -316,7 +369,6 @@ class _SignUpScreenState extends State<SignUpScreen> {
     );
   }
 
-
   Widget _buildInputField({
     required String label,
     required TextEditingController controller,
@@ -345,7 +397,10 @@ class _SignUpScreenState extends State<SignUpScreen> {
             prefixIcon: Icon(icon, color: const Color(0xFF94A3B8), size: 20),
             filled: true,
             fillColor: Colors.white,
-            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 16,
+              vertical: 16,
+            ),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
               borderSide: BorderSide(color: Colors.grey[200]!),
@@ -356,11 +411,61 @@ class _SignUpScreenState extends State<SignUpScreen> {
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: Color(0xFF3B26F2), width: 1.5),
+              borderSide: const BorderSide(
+                color: Color(0xFF3B26F2),
+                width: 1.5,
+              ),
             ),
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildRoleButton(
+    String label,
+    IconData icon,
+    bool isSelected,
+    VoidCallback onTap,
+  ) {
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(vertical: 12),
+        decoration: BoxDecoration(
+          color: isSelected ? Colors.white : Colors.transparent,
+          borderRadius: BorderRadius.circular(10),
+          boxShadow: isSelected
+              ? [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.05),
+                    blurRadius: 4,
+                    offset: const Offset(0, 2),
+                  ),
+                ]
+              : [],
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              icon,
+              size: 18,
+              color: isSelected ? const Color(0xFF3B26F2) : const Color(0xFF64748B),
+            ),
+            const SizedBox(width: 8),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                color: isSelected ? const Color(0xFF3B26F2) : const Color(0xFF64748B),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

@@ -15,6 +15,7 @@ class _LoginScreenState extends State<LoginScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _isLoading = false;
+  bool _isJobSeeker = true;
   final AuthService _authService = AuthService();
 
   Future<void> _signInWithEmail() async {
@@ -42,7 +43,9 @@ class _LoginScreenState extends State<LoginScreen> {
         );
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (_) => const MainDashboardScreen()),
+          MaterialPageRoute(
+            builder: (_) => MainDashboardScreen(isJobSeeker: _isJobSeeker),
+          ),
         );
       }
     } catch (e) {
@@ -76,7 +79,9 @@ class _LoginScreenState extends State<LoginScreen> {
           );
           Navigator.pushReplacement(
             context,
-            MaterialPageRoute(builder: (_) => const MainDashboardScreen()),
+            MaterialPageRoute(
+              builder: (_) => MainDashboardScreen(isJobSeeker: _isJobSeeker),
+            ),
           );
         }
       }
@@ -171,6 +176,43 @@ class _LoginScreenState extends State<LoginScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    const Text(
+                      'I am a:',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFF1E293B),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    Container(
+                      padding: const EdgeInsets.all(4),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF1F5F9),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: _buildRoleButton(
+                              'Job Seeker',
+                              Icons.person_search_outlined,
+                              _isJobSeeker,
+                              () => setState(() => _isJobSeeker = true),
+                            ),
+                          ),
+                          Expanded(
+                            child: _buildRoleButton(
+                              'Employer',
+                              Icons.business_center_outlined,
+                              !_isJobSeeker,
+                              () => setState(() => _isJobSeeker = false),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 24),
                     _buildInputField(
                       label: 'Email Address',
                       controller: _emailController,
@@ -337,6 +379,53 @@ class _LoginScreenState extends State<LoginScreen> {
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildRoleButton(
+    String label,
+    IconData icon,
+    bool isSelected,
+    VoidCallback onTap,
+  ) {
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(vertical: 12),
+        decoration: BoxDecoration(
+          color: isSelected ? Colors.white : Colors.transparent,
+          borderRadius: BorderRadius.circular(10),
+          boxShadow: isSelected
+              ? [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.05),
+                    blurRadius: 4,
+                    offset: const Offset(0, 2),
+                  ),
+                ]
+              : [],
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              icon,
+              size: 18,
+              color: isSelected ? const Color(0xFF3B26F2) : const Color(0xFF64748B),
+            ),
+            const SizedBox(width: 8),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                color: isSelected ? const Color(0xFF3B26F2) : const Color(0xFF64748B),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

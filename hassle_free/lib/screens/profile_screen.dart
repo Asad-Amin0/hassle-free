@@ -12,6 +12,7 @@ class ProfileScreen extends StatefulWidget {
 class _ProfileScreenState extends State<ProfileScreen> {
   final ResumeService _resumeService = ResumeService();
   String _name = "User";
+  String _location = "Lahore, Punjab, Pakistan";
   String _education = "";
   String _experience = "";
   List<String> _skills = [];
@@ -37,6 +38,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     if (data != null && mounted) {
       setState(() {
         _name = data['name'] ?? "User";
+        _location = data['location'] ?? "Lahore, Punjab, Pakistan";
         _education = data['education'] ?? "";
         _experience = data['experience'] ?? "";
         _skills = List<String>.from(data['skills'] ?? []);
@@ -52,6 +54,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           setState(() {
             if (data != null) {
               _name = data['name'] ?? "User";
+              _location = data['location'] ?? "Lahore, Punjab, Pakistan";
               _education = data['education'] ?? "";
               _experience = data['experience'] ?? "";
               _skills = List<String>.from(data['skills'] ?? []);
@@ -174,7 +177,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   children: [
                     Icon(Icons.location_on, size: 16, color: Colors.white.withValues(alpha: 0.5)),
                     const SizedBox(width: 4),
-                    Text('Lahore, Punjab, Pakistan', style: TextStyle(color: Colors.white.withValues(alpha: 0.6))),
+                    Text(_location, style: TextStyle(color: Colors.white.withValues(alpha: 0.6))),
                   ],
                 ),
                 const SizedBox(height: 12),
@@ -200,12 +203,30 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     _buildStatMini('24', 'Applied'),
                   ],
                 ),
+                if (!isWeb) ...[
+                  const SizedBox(height: 24),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton.icon(
+                      onPressed: _showEditProfileDialog,
+                      icon: const Icon(Icons.edit_outlined, size: 18),
+                      label: const Text('Edit Profile'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF6366F1),
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        elevation: 0,
+                      ),
+                    ),
+                  ),
+                ],
               ],
             ),
           ),
           if (isWeb)
             ElevatedButton.icon(
-              onPressed: () {},
+              onPressed: _showEditProfileDialog,
               icon: const Icon(Icons.edit_outlined, size: 18),
               label: const Text('Edit Profile'),
               style: ElevatedButton.styleFrom(
@@ -466,6 +487,61 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 ),
               ))
           .toList(),
+    );
+  }
+
+  void _showEditProfileDialog() {
+    final nameController = TextEditingController(text: _name);
+    final locationController = TextEditingController(text: _location);
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: const Color(0xFF1E293B),
+        title: const Text('Edit Profile', style: TextStyle(color: Colors.white)),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: nameController,
+              style: const TextStyle(color: Colors.white),
+              decoration: const InputDecoration(
+                labelText: 'Name',
+                labelStyle: TextStyle(color: Colors.white60),
+                enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: Colors.white24)),
+              ),
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: locationController,
+              style: const TextStyle(color: Colors.white),
+              decoration: const InputDecoration(
+                labelText: 'Location',
+                labelStyle: TextStyle(color: Colors.white60),
+                enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: Colors.white24)),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel', style: TextStyle(color: Colors.grey)),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              await _resumeService.updateProfile(
+                name: nameController.text,
+                location: locationController.text,
+              );
+              if (!context.mounted) return;
+              Navigator.pop(context);
+            },
+            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF6366F1)),
+            child: const Text('Save', style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
     );
   }
 }
