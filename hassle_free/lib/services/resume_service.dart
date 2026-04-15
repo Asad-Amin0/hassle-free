@@ -95,4 +95,16 @@ class ResumeService {
       debugPrint('Error updating profile: $e');
     }
   }
+
+  // Get all candidate resumes across the platform (for employers)
+  Stream<List<Map<String, dynamic>>> getAllCandidatesStream() {
+    return _db
+        .collectionGroup('resumes')
+        .snapshots()
+        .map((snapshot) => snapshot.docs.map((doc) {
+              final data = doc.data();
+              data['userId'] = doc.reference.parent.parent?.id; // Extract userId from path
+              return data;
+            }).toList());
+  }
 }

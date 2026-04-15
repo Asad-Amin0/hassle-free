@@ -2,9 +2,11 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'resume_screen.dart';
 import 'employer_dashboard_screen.dart';
+import 'employer_jobs_screen.dart';
 import 'jobs_screen.dart';
 import 'profile_screen.dart';
 import 'interview_screen.dart';
+import 'company_profile_screen.dart';
 import '../services/resume_service.dart';
 
 class MainDashboardScreen extends StatefulWidget {
@@ -188,21 +190,9 @@ class _MainDashboardScreenState extends State<MainDashboardScreen>
     if (!_isJobSeeker) {
       switch (_selectedIndex) {
         case 1:
-          return const Center(
-            child: Text(
-              "Job Postings Screen\n(Coming Soon)",
-              textAlign: TextAlign.center,
-              style: TextStyle(color: Colors.white, fontSize: 18),
-            ),
-          );
+          return const EmployerJobsScreen();
         case 2:
-          return const Center(
-            child: Text(
-              "Company Profile Screen\n(Coming Soon)",
-              textAlign: TextAlign.center,
-              style: TextStyle(color: Colors.white, fontSize: 18),
-            ),
-          );
+          return const CompanyProfileScreen();
         default:
           return const EmployerDashboardScreen();
       }

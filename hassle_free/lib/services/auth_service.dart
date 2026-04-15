@@ -1,53 +1,35 @@
-import 'package:google_sign_in/google_sign_in.dart';
 import 'package:flutter/foundation.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 
 class AuthService {
-  // Use a singleton pattern for the service
+  // Singleton pattern
   static final AuthService _instance = AuthService._internal();
   factory AuthService() => _instance;
   AuthService._internal();
 
-  final GoogleSignIn _googleSignIn = GoogleSignIn.instance;
   final FirebaseAuth _firebaseAuth = FirebaseAuth.instance;
 
-  // Manual state tracking for google_sign_in 7.0+
-  GoogleSignInAccount? _currentUser;
+  // Only used on mobile (non-web)
+  final GoogleSignIn _googleSignIn = GoogleSignIn(
+    scopes: ['email', 'profile'],
+  );
 
-  Future<void> init() async {
-    try {
-      await _googleSignIn.initialize(
-        clientId: kIsWeb ? '73267340796-iqe4lg6ug088mk4mrt176mg64s10c5e5.apps.googleusercontent.com' : null,
-      );
-      
-      // Listen for authentication events to track user state
-      _googleSignIn.authenticationEvents.listen((event) {
-        if (event is GoogleSignInAuthenticationEventSignIn) {
-          _currentUser = event.user;
-          debugPrint('Google User signed in: ${_currentUser?.email}');
-        } else if (event is GoogleSignInAuthenticationEventSignOut) {
-          _currentUser = null;
-          debugPrint('Google User signed out');
-        }
-      });
-
-      // Attempt to restore previous session
-      _currentUser = await _googleSignIn.attemptLightweightAuthentication();
-      
-      debugPrint('Google Sign-In initialized successfully');
-    } catch (e) {
-      debugPrint('Error initializing Google Sign-In: $e');
-    }
-  }
-
-  // Getter for the tracked user
-  GoogleSignInAccount? get currentUser => _currentUser;
-  
-  // Firebase Auth Stream
+  // Firebase Auth stream
   Stream<User?> get authStateChanges => _firebaseAuth.authStateChanges();
 
-  // Sign In with email and password
-  Future<UserCredential> signInWithEmailPassword(String email, String password) async {
+  /// Called at app startup — only needed for mobile flow
+  Future<void> init() async {
+    if (kIsWeb) return; // Web uses Firebase popup, no pre-init needed
+    debugPrint('AuthService initialized for mobile');
+  }
+
+  // ─── Email / Password ──────────────────────────────────────────────────────
+
+  Future<UserCredential> signInWithEmailPassword(
+    String email,
+    String password,
+  ) async {
     try {
       return await _firebaseAuth.signInWithEmailAndPassword(
         email: email,
@@ -59,8 +41,10 @@ class AuthService {
     }
   }
 
-  // Sign Up with email and password
-  Future<UserCredential> signUpWithEmailPassword(String email, String password) async {
+  Future<UserCredential> signUpWithEmailPassword(
+    String email,
+    String password,
+  ) async {
     try {
       return await _firebaseAuth.createUserWithEmailAndPassword(
         email: email,
@@ -72,32 +56,81 @@ class AuthService {
     }
   }
 
+  // ─── Google Sign-In ────────────────────────────────────────────────────────
+
   Future<UserCredential?> signInWithGoogle() async {
+    if (kIsWeb) {
+      return _signInWithGoogleWeb();
+    } else {
+      return _signInWithGoogleMobile();
+    }
+  }
+
+  /// Web: uses Firebase's built-in Google popup — no google_sign_in package needed
+  Future<UserCredential?> _signInWithGoogleWeb() async {
     try {
-      // Using authenticate() as it is the recognized method in this environment
-      final account = await _googleSignIn.authenticate();
-      _currentUser = account;
-      
-      final authentication = account.authentication;
-      final AuthCredential credential = GoogleAuthProvider.credential(
-        accessToken: (authentication as dynamic).accessToken,
-        idToken: (authentication as dynamic).idToken,
+      debugPrint('Web Google Sign-In: opening popup...');
+      final GoogleAuthProvider googleProvider = GoogleAuthProvider()
+        ..addScope('email')
+        ..addScope('profile');
+
+      final userCredential =
+          await _firebaseAuth.signInWithPopup(googleProvider);
+      debugPrint(
+        'Web Google Sign-In success: ${userCredential.user?.email}',
       );
-      
-      return await _firebaseAuth.signInWithCredential(credential);
+      return userCredential;
     } catch (e) {
-      debugPrint('Error during Google Sign-In: $e');
+      debugPrint('Web Google Sign-In error: $e');
       rethrow;
     }
   }
 
+  /// Mobile: uses google_sign_in package to get tokens, then Firebase
+  Future<UserCredential?> _signInWithGoogleMobile() async {
+    try {
+      debugPrint('Mobile Google Sign-In: showing account picker...');
+      final GoogleSignInAccount? account = await _googleSignIn.signIn();
+
+      if (account == null) {
+        debugPrint('Mobile Google Sign-In: user cancelled');
+        return null;
+      }
+
+      debugPrint('Google account: ${account.email}');
+      final GoogleSignInAuthentication auth = await account.authentication;
+
+      debugPrint(
+        'Tokens - accessToken: ${auth.accessToken != null}, idToken: ${auth.idToken != null}',
+      );
+
+      final AuthCredential credential = GoogleAuthProvider.credential(
+        accessToken: auth.accessToken,
+        idToken: auth.idToken,
+      );
+
+      final userCredential =
+          await _firebaseAuth.signInWithCredential(credential);
+      debugPrint(
+        'Mobile Google Sign-In success: ${userCredential.user?.email}',
+      );
+      return userCredential;
+    } catch (e) {
+      debugPrint('Mobile Google Sign-In error: $e');
+      rethrow;
+    }
+  }
+
+  // ─── Sign Out ──────────────────────────────────────────────────────────────
+
   Future<void> signOut() async {
     try {
-      await _googleSignIn.signOut();
+      if (!kIsWeb) {
+        await _googleSignIn.signOut();
+      }
       await _firebaseAuth.signOut();
-      _currentUser = null;
     } catch (e) {
-      debugPrint('Error during Sign-Out: $e');
+      debugPrint('Sign-Out error: $e');
     }
   }
 }

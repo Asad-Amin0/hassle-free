@@ -17,7 +17,7 @@ void main() async {
     debugPrint('Firebase initialization failed: $e');
   }
   
-  // Initialize Google Sign-In for v7.x+
+  // Initialize Auth Service
   await AuthService().init();
   
   runApp(const MyApp());

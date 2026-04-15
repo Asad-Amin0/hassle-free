@@ -1,19 +1,75 @@
 import 'package:flutter/material.dart';
+import '../services/job_service.dart';
+import '../services/resume_service.dart';
+import '../widgets/resume_thematic_viewer.dart';
+import 'post_job_screen.dart';
 
 class EmployerDashboardScreen extends StatelessWidget {
   const EmployerDashboardScreen({super.key});
 
+  void _showPostJobDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const Dialog(
+        backgroundColor: Colors.transparent,
+        insetPadding: EdgeInsets.all(16),
+        child: PostJobScreen(),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     bool isMobile = MediaQuery.of(context).size.width < 1100;
+    final jobService = JobService();
+
     return SingleChildScrollView(
       padding: EdgeInsets.all(isMobile ? 16 : 32),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _buildHeader(isMobile),
+          _buildHeader(context, isMobile),
           const SizedBox(height: 32),
-          _buildStatsRow(isMobile),
+          
+          StreamBuilder<Map<String, int>>(
+            stream: jobService.getEmployerStatsStream(),
+            builder: (context, snapshot) {
+              final stats = snapshot.data ?? {'activeJobs': 0, 'totalApplicants': 0};
+              return _buildStatsRow(isMobile, stats);
+            },
+          ),
+          
+          const SizedBox(height: 32),
+          
+          const Text(
+            'Your Job Postings',
+            style: TextStyle(
+              fontSize: 24, 
+              fontWeight: FontWeight.bold, 
+              color: Colors.white,
+              letterSpacing: -0.5,
+            ),
+          ),
+          const SizedBox(height: 20),
+          
+          StreamBuilder<List<Map<String, dynamic>>>(
+            stream: jobService.getEmployerJobsStream(),
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const Center(child: CircularProgressIndicator(color: Color(0xFF6366F1)));
+              }
+              if (snapshot.hasError) {
+                return const Text('Error loading jobs', style: TextStyle(color: Colors.red));
+              }
+              final jobs = snapshot.data ?? [];
+              if (jobs.isEmpty) {
+                return _buildEmptyState(context);
+              }
+              return _buildJobsList(isMobile, jobs);
+            },
+          ),
+          
           const SizedBox(height: 32),
           const Text(
             'Top Candidate Recommendations',
@@ -25,13 +81,180 @@ class EmployerDashboardScreen extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 20),
-          _buildCandidateTable(isMobile),
+          StreamBuilder<List<Map<String, dynamic>>>(
+            stream: jobService.getEmployerJobsStream(),
+            builder: (context, jobSnapshot) {
+              final jobs = jobSnapshot.data ?? [];
+              final List<String> employerSkills = jobs
+                  .expand((j) => List<String>.from(j['requiredSkills'] ?? []))
+                  .toSet()
+                  .toList();
+
+              return StreamBuilder<List<Map<String, dynamic>>>(
+                stream: ResumeService().getAllCandidatesStream(),
+                builder: (context, resumeSnapshot) {
+                  final allCandidates = resumeSnapshot.data ?? [];
+                  
+                  // Filter out people who already applied (optional, but requested as 'suggest')
+                  // For now, let's just use matching logic
+                  List<Map<String, dynamic>> matchedCandidates = allCandidates.map((c) {
+                    final skills = List<String>.from(c['skills'] ?? []);
+                    int matches = 0;
+                    for (var s in skills) {
+                      if (employerSkills.any((es) => es.toLowerCase() == s.toLowerCase())) {
+                        matches++;
+                      }
+                    }
+                    double score = skills.isEmpty ? 0 : (matches / employerSkills.length.clamp(1, 100)) * 100;
+                    return {...c, 'matchScore': score.toStringAsFixed(0)};
+                  }).toList();
+
+                  matchedCandidates.sort((a, b) => double.parse(b['matchScore']).compareTo(double.parse(a['matchScore'])));
+                  matchedCandidates = matchedCandidates.where((c) => double.parse(c['matchScore']) > 0).toList();
+
+                  if (matchedCandidates.isEmpty) {
+                    return Container(
+                      padding: const EdgeInsets.all(40),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.05),
+                        borderRadius: BorderRadius.circular(24),
+                      ),
+                      child: const Center(child: Text('No recommendations yet', style: TextStyle(color: Colors.white60))),
+                    );
+                  }
+                  return _buildCandidateTable(context, isMobile, matchedCandidates);
+                },
+              );
+            },
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildHeader(bool isMobile) {
+  Widget _buildEmptyState(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(40),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.05),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
+      ),
+      child: Column(
+        children: [
+          Icon(Icons.business_center_outlined, size: 64, color: Colors.white.withValues(alpha: 0.2)),
+          const SizedBox(height: 16),
+          Text('No job postings yet', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white.withValues(alpha: 0.8))),
+          const SizedBox(height: 8),
+          Text('Post your first job to start receiving candidates', style: TextStyle(color: Colors.white.withValues(alpha: 0.5))),
+          const SizedBox(height: 24),
+          ElevatedButton(
+            onPressed: () => _showPostJobDialog(context),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF6366F1),
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            ),
+            child: const Text('Post a Job', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildJobsList(bool isMobile, List<Map<String, dynamic>> jobs) {
+    return ListView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      itemCount: jobs.length,
+      itemBuilder: (context, index) {
+        final job = jobs[index];
+        final skills = List<String>.from(job['requiredSkills'] ?? []);
+        
+        return Container(
+          margin: const EdgeInsets.only(bottom: 16),
+          padding: const EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            color: Colors.white.withValues(alpha: 0.05),
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          job['title'] ?? 'Unknown Title',
+                          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          '${job['type']} • ${job['location']} • ${job['experienceLevel']}',
+                          style: TextStyle(color: Colors.white.withValues(alpha: 0.6), fontSize: 14),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: job['status'] == 'active' ? Colors.green.withValues(alpha: 0.1) : Colors.orange.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text(
+                      (job['status']?.toString() ?? 'active').toUpperCase(),
+                      style: TextStyle(
+                        color: job['status'] == 'active' ? Colors.green : Colors.orange,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 12,
+                      ),
+                    ),
+                  )
+                ],
+              ),
+              const SizedBox(height: 16),
+              Text(
+                job['description'] ?? '',
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(color: Colors.white.withValues(alpha: 0.8), fontSize: 14),
+              ),
+              const SizedBox(height: 16),
+              Row(
+                children: [
+                  ...skills.take(3).map((s) => Container(
+                    margin: const EdgeInsets.only(right: 8),
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.1), 
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text(s, style: const TextStyle(fontSize: 12, color: Colors.white70)),
+                  )),
+                  if (skills.length > 3)
+                    Text('+${skills.length - 3} more', style: TextStyle(color: Colors.white.withValues(alpha: 0.5), fontSize: 12)),
+                  const Spacer(),
+                  Text(
+                    job['salaryRange'] ?? '',
+                    style: const TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF6366F1)),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildHeader(BuildContext context, bool isMobile) {
     if (isMobile) {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -53,7 +276,7 @@ class EmployerDashboardScreen extends StatelessWidget {
           SizedBox(
             width: double.infinity,
             child: ElevatedButton.icon(
-              onPressed: () {},
+              onPressed: () => _showPostJobDialog(context),
               icon: const Icon(Icons.add, color: Colors.white, size: 20),
               label: const Text('Post a New Job', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
               style: ElevatedButton.styleFrom(
@@ -92,7 +315,7 @@ class EmployerDashboardScreen extends StatelessWidget {
           ),
         ),
         ElevatedButton.icon(
-          onPressed: () {},
+          onPressed: () => _showPostJobDialog(context),
           icon: const Icon(Icons.add, color: Colors.white, size: 20),
           label: const Text('Post a New Job', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
           style: ElevatedButton.styleFrom(
@@ -106,22 +329,20 @@ class EmployerDashboardScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildStatsRow(bool isMobile) {
+  Widget _buildStatsRow(bool isMobile, Map<String, int> stats) {
     if (isMobile) {
       return Column(
         children: [
           Row(
             children: [
-              _buildStatCard('Active Jobs', '12', Icons.business_center, Colors.blue),
+              _buildStatCard('Active Jobs', stats['activeJobs'].toString(), Icons.business_center, Colors.blue),
               const SizedBox(width: 16),
-              _buildStatCard('Total Applicants', '458', Icons.people, Colors.purple),
+              _buildStatCard('Total Applicants', stats['totalApplicants'].toString(), Icons.people, Colors.purple),
             ],
           ),
           const SizedBox(height: 16),
           Row(
             children: [
-              _buildStatCard('Interviews', '24', Icons.calendar_today, Colors.orange),
-              const SizedBox(width: 16),
               _buildStatCard('Avg. Match', '84%', Icons.auto_awesome, Colors.green),
             ],
           ),
@@ -130,11 +351,9 @@ class EmployerDashboardScreen extends StatelessWidget {
     }
     return Row(
       children: [
-        _buildStatCard('Active Jobs', '12', Icons.business_center, Colors.blue),
+        _buildStatCard('Active Jobs', stats['activeJobs'].toString(), Icons.business_center, Colors.blue),
         const SizedBox(width: 20),
-        _buildStatCard('Total Applicants', '458', Icons.people, Colors.purple),
-        const SizedBox(width: 20),
-        _buildStatCard('Interviews Scheduled', '24', Icons.calendar_today, Colors.orange),
+        _buildStatCard('Total Applicants', stats['totalApplicants'].toString(), Icons.people, Colors.purple),
         const SizedBox(width: 20),
         _buildStatCard('Average Match', '84%', Icons.auto_awesome, Colors.green),
       ],
@@ -183,7 +402,7 @@ class EmployerDashboardScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildCandidateTable(bool isMobile) {
+  Widget _buildCandidateTable(BuildContext context, bool isMobile, List<Map<String, dynamic>> candidates) {
     return Container(
       width: double.infinity,
       decoration: BoxDecoration(
@@ -201,18 +420,22 @@ class EmployerDashboardScreen extends StatelessWidget {
           dataRowMaxHeight: 72,
           columns: [
             _buildTableHeader('Candidate Name'),
-            _buildTableHeader('Role'),
+            _buildTableHeader('Category'),
             _buildTableHeader('Skills'),
-            _buildTableHeader('Score'),
-            _buildTableHeader('Status'),
+            _buildTableHeader('Match'),
             _buildTableHeader('Action'),
           ],
-          rows: [
-            _buildCandidateRow('Muhammad Abdullah', 'Python Developer', ['Python', 'AI', 'NLP'], '9.2', 'Recommended'),
-            _buildCandidateRow('Haris Naeem', 'Mobile Developer', ['Flutter', 'Dart', 'Firebase'], '8.8', 'Interested'),
-            _buildCandidateRow('Ali Hassan', 'DevOps Engineer', ['AWS', 'Docker', 'K8s'], '8.5', 'In Review'),
-            _buildCandidateRow('Waleed Tariq', 'Data Analyst', ['NLP', 'Pandas', 'ML'], '8.2', 'Shortlisted'),
-          ],
+          rows: candidates.take(5).map((c) {
+            final skills = List<String>.from(c['skills'] ?? []);
+            return _buildCandidateRow(
+              context,
+              c['name'] ?? 'Candidate',
+              c['category'] ?? 'Professional',
+              skills,
+              '${c['matchScore']}%',
+              c, // Pass full candidate data for resume viewer
+            );
+          }).toList(),
         ),
       ),
     );
@@ -231,7 +454,7 @@ class EmployerDashboardScreen extends StatelessWidget {
     );
   }
 
-  DataRow _buildCandidateRow(String name, String role, List<String> skills, String score, String status) {
+  DataRow _buildCandidateRow(BuildContext context, String name, String role, List<String> skills, String score, Map<String, dynamic> resumeData) {
     return DataRow(
       cells: [
         DataCell(Row(
@@ -253,7 +476,7 @@ class EmployerDashboardScreen extends StatelessWidget {
         )),
         DataCell(Text(role, style: TextStyle(color: Colors.white.withValues(alpha: 0.8)))),
         DataCell(Row(
-          children: skills.map((s) => Container(
+          children: skills.take(3).map((s) => Container(
             margin: const EdgeInsets.only(right: 6),
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
             decoration: BoxDecoration(
@@ -274,12 +497,23 @@ class EmployerDashboardScreen extends StatelessWidget {
             style: const TextStyle(color: Colors.green, fontWeight: FontWeight.bold),
           ),
         )),
-        DataCell(Text(
-          status, 
-          style: TextStyle(color: Colors.white.withValues(alpha: 0.6), fontSize: 13),
-        )),
         DataCell(TextButton(
-          onPressed: () {}, 
+          onPressed: () {
+            // Mold the resume data into the format Expected by ResumeThematicViewer
+            final applicantFormat = {
+              'seekerName': name,
+              'seekerEmail': 'Contact information hidden until hired',
+              'resumeData': resumeData,
+            };
+            
+            showDialog(
+              context: context,
+              builder: (context) => ResumeThematicViewer(
+                applicant: applicantFormat,
+                theme: 'Modern', 
+              ),
+            );
+          }, 
           child: const Text(
             'View Profile',
             style: TextStyle(color: Color(0xFF818CF8), fontWeight: FontWeight.bold),
