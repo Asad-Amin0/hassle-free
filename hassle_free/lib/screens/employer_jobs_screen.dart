@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../services/job_service.dart';
 import 'post_job_screen.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../widgets/resume_thematic_viewer.dart';
 
 class EmployerJobsScreen extends StatelessWidget {
@@ -219,7 +220,7 @@ class EmployerJobsScreen extends StatelessWidget {
         crossAxisCount: 2,
         crossAxisSpacing: 24,
         mainAxisSpacing: 24,
-        mainAxisExtent: 240,
+        mainAxisExtent: 260,
       ),
       itemCount: jobs.length,
       itemBuilder: (context, index) {
@@ -230,6 +231,31 @@ class EmployerJobsScreen extends StatelessWidget {
 
   Widget _buildJobCard(BuildContext context, Map<String, dynamic> job, {bool isWebGrid = false}) {
     final skills = List<String>.from(job['requiredSkills'] ?? []);
+    
+    bool isExpired = false;
+    String expiryText = '';
+    try {
+        DateTime expiryDate;
+        if (job['expiryDate'] != null) {
+          final expiryTimestamp = job['expiryDate'] as Timestamp;
+          expiryDate = expiryTimestamp.toDate();
+        } else if (job['createdAt'] != null) {
+          final createdTimestamp = job['createdAt'] as Timestamp;
+          expiryDate = createdTimestamp.toDate().add(const Duration(days: 30));
+        } else {
+          expiryDate = DateTime.now().add(const Duration(days: 30));
+        }
+        
+        if (expiryDate.isBefore(DateTime.now())) {
+          isExpired = true;
+        }
+        
+        final months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+        expiryText = 'Expires: ${expiryDate.day} ${months[expiryDate.month - 1]} ${expiryDate.year}, ${expiryDate.hour.toString().padLeft(2, '0')}:${expiryDate.minute.toString().padLeft(2, '0')}';
+      } catch (_) {}
+    
+    final statusText = isExpired ? 'EXPIRED' : (job['status']?.toString() ?? 'active').toUpperCase();
+    final statusColor = isExpired ? Colors.redAccent : (job['status'] == 'active' ? Colors.green : Colors.orange);
     
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
@@ -269,6 +295,19 @@ class EmployerJobsScreen extends StatelessWidget {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
+                    if (expiryText.isNotEmpty) ...[
+                      const SizedBox(height: 4),
+                      Row(
+                        children: [
+                          const Icon(Icons.timer_outlined, color: Colors.orangeAccent, size: 14),
+                          const SizedBox(width: 4),
+                          Text(
+                            expiryText,
+                            style: const TextStyle(color: Colors.orangeAccent, fontSize: 12, fontWeight: FontWeight.bold),
+                          ),
+                        ],
+                      ),
+                    ],
                   ],
                 ),
               ),
@@ -277,13 +316,13 @@ class EmployerJobsScreen extends StatelessWidget {
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                     decoration: BoxDecoration(
-                      color: job['status'] == 'active' ? Colors.green.withValues(alpha: 0.1) : Colors.orange.withValues(alpha: 0.1),
+                      color: statusColor.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Text(
-                      (job['status']?.toString() ?? 'active').toUpperCase(),
+                      statusText,
                       style: TextStyle(
-                        color: job['status'] == 'active' ? Colors.green : Colors.orange,
+                        color: statusColor,
                         fontWeight: FontWeight.bold,
                         fontSize: 12,
                       ),
@@ -353,11 +392,11 @@ class EmployerJobsScreen extends StatelessWidget {
     );
   }
 
-  void _viewResume(BuildContext context, Map<String, dynamic> applicant, String theme) {
+  void _viewResume(BuildContext context, Map<String, dynamic> applicant, String theme, Color primaryColor) {
     showDialog(
       context: context,
       builder: (context) => Dialog.fullscreen(
-        child: ResumeThematicViewer(applicant: applicant, theme: theme),
+        child: ResumeThematicViewer(applicant: applicant, theme: theme, primaryColor: primaryColor),
       ),
     );
   }
@@ -491,7 +530,12 @@ class EmployerJobsScreen extends StatelessWidget {
             children: [
               Expanded(
                 child: ElevatedButton(
-                  onPressed: () => _viewResume(context, applicant, job['resumeTheme'] ?? 'Modern'),
+                  onPressed: () {
+                    final theme = job['resumeTheme'] ?? 'Modern';
+                    final colorHex = job['resumeColor'] ?? 'ff6366f1';
+                    final primaryColor = Color(int.parse(colorHex, radix: 16));
+                    _viewResume(context, applicant, theme, primaryColor);
+                  },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF6366F1), 
                     foregroundColor: Colors.white,

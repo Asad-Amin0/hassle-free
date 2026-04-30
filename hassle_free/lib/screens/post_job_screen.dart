@@ -44,7 +44,20 @@ class _PostJobScreenState extends State<PostJobScreen> {
   final List<String> _experienceLevels = ['Entry-Level', 'Mid-Level', 'Senior', 'Lead', 'Manager'];
 
   String _selectedTheme = 'Modern';
-  final List<String> _resumeThemes = ['Professional', 'Creative', 'Modern'];
+  Color _selectedThemeColor = const Color(0xFF6366F1);
+  final List<String> _resumeThemes = ['Professional', 'Modern', 'Creative', 'ATS-Optimized'];
+  final List<Color> _themeColors = [
+    const Color(0xFF1E293B), // Charcoal
+    const Color(0xFF0D9488), // Teal
+    const Color(0xFF3B82F6), // Blue
+    const Color(0xFF1E3A8A), // Navy
+    const Color(0xFF0EA5E9), // Sky
+    const Color(0xFFA8A29E), // Taupe
+    const Color(0xFFF59E0B), // Orange
+    const Color(0xFFE11D48), // Rose
+  ];
+
+  DateTime _selectedExpiryDate = DateTime.now().add(const Duration(days: 30));
 
   final List<String> _skills = [];
   final _skillController = TextEditingController();
@@ -93,6 +106,8 @@ class _PostJobScreenState extends State<PostJobScreen> {
         'requiredSkills': _skills,
         'experienceLevel': _selectedExperience,
         'resumeTheme': _selectedTheme,
+        'resumeColor': _selectedThemeColor.toARGB32().toRadixString(16),
+        'expiryDate': _selectedExpiryDate,
       });
       message = success ? 'Job updated successfully!' : 'Failed to update job.';
     } else {
@@ -107,6 +122,8 @@ class _PostJobScreenState extends State<PostJobScreen> {
         requiredSkills: _skills,
         experienceLevel: _selectedExperience,
         resumeTheme: _selectedTheme,
+        resumeColor: _selectedThemeColor.toARGB32().toRadixString(16),
+        expiryDate: _selectedExpiryDate,
       );
       success = jobId != null;
       message = success ? 'Job posted successfully!' : 'Failed to post job.';
@@ -220,6 +237,7 @@ class _PostJobScreenState extends State<PostJobScreen> {
               ),
               const SizedBox(height: 16),
               Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Expanded(
                     child: _buildTextField(
@@ -242,6 +260,7 @@ class _PostJobScreenState extends State<PostJobScreen> {
               ),
               const SizedBox(height: 16),
               Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Expanded(
                     child: _buildDropdown(
@@ -265,12 +284,17 @@ class _PostJobScreenState extends State<PostJobScreen> {
                 ],
               ),
               const SizedBox(height: 16),
-              _buildDropdown(
-                label: 'Required Resume Theme',
-                value: _selectedTheme,
-                items: _resumeThemes,
-                onChanged: (val) => setState(() => _selectedTheme = val!),
-                icon: Icons.palette_outlined,
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                   Expanded(
+                    child: _buildThemeSelector(),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: _buildDatePicker(context),
+                  ),
+                ],
               ),
               const SizedBox(height: 16),
               _buildTextField(
@@ -421,6 +445,381 @@ class _PostJobScreenState extends State<PostJobScreen> {
     );
   }
 
+  Widget _buildThemeSelector() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Required Resume Theme',
+          style: TextStyle(color: Colors.white.withValues(alpha: 0.7), fontSize: 13, fontWeight: FontWeight.w600),
+        ),
+        const SizedBox(height: 8),
+        InkWell(
+          onTap: _showThemePicker,
+          borderRadius: BorderRadius.circular(16),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.05),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
+            ),
+            child: Row(
+              children: [
+                const Icon(Icons.palette_outlined, color: Color(0xFF6366F1), size: 20),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    _selectedTheme,
+                    style: const TextStyle(color: Colors.white, fontSize: 16),
+                  ),
+                ),
+                const Icon(Icons.keyboard_arrow_down, color: Colors.white54),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  void _showThemePicker() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => Container(
+          height: MediaQuery.of(context).size.height * 0.8,
+          padding: const EdgeInsets.only(top: 12),
+          decoration: const BoxDecoration(
+            color: Color(0xFF0F172A),
+            borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
+          ),
+          child: Column(
+            children: [
+              Container(width: 40, height: 4, decoration: BoxDecoration(color: Colors.white24, borderRadius: BorderRadius.circular(2))),
+              const SizedBox(height: 24),
+              const Text('Choose Resume Template', style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold)),
+              const SizedBox(height: 8),
+              Text('Selected theme will be required for applicants', style: TextStyle(color: Colors.white.withValues(alpha: 0.5), fontSize: 14)),
+              const SizedBox(height: 24),
+              
+              Expanded(
+                child: GridView.builder(
+                  padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
+                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 2,
+                    childAspectRatio: 0.55, // Taller cards for better visibility
+                    crossAxisSpacing: 16,
+                    mainAxisSpacing: 16,
+                  ),
+                  itemCount: _resumeThemes.length,
+                  itemBuilder: (context, index) {
+                    final theme = _resumeThemes[index];
+                    final isSelected = _selectedTheme == theme;
+
+                    return StatefulBuilder(
+                      builder: (context, setInnerState) => Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Expanded(
+                            child: GestureDetector(
+                              onTap: () {
+                                setState(() => _selectedTheme = theme);
+                                Navigator.pop(context);
+                              },
+                              child: Container(
+                                width: double.infinity,
+                                decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(16),
+                                  border: Border.all(
+                                    color: isSelected ? _selectedThemeColor : Colors.white.withValues(alpha: 0.05), 
+                                    width: 2
+                                  ),
+                                  color: Colors.white.withValues(alpha: 0.03),
+                                ),
+                                child: ClipRRect(
+                                  borderRadius: BorderRadius.circular(14),
+                                  child: Stack(
+                                    children: [
+                                      Positioned.fill(
+                                        child: _buildResumePreview(theme, isSelected ? _selectedThemeColor : Colors.black87),
+                                      ),
+                                      
+                                      // Selection Overlay
+                                      if (isSelected)
+                                        Container(
+                                          decoration: BoxDecoration(
+                                            color: _selectedThemeColor.withValues(alpha: 0.1),
+                                          ),
+                                        ),
+                                      
+                                      if (isSelected)
+                                        Positioned(
+                                          top: 12,
+                                          right: 12,
+                                          child: Icon(Icons.check_circle, color: _selectedThemeColor, size: 24),
+                                        ),
+                                        
+                                      Positioned(
+                                        bottom: 12,
+                                        left: 12,
+                                        child: Container(
+                                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                          decoration: BoxDecoration(
+                                            color: Colors.black.withValues(alpha: 0.5),
+                                            borderRadius: BorderRadius.circular(8),
+                                          ),
+                                          child: Row(
+                                            children: [
+                                              const Icon(Icons.remove_red_eye_outlined, color: Colors.white70, size: 12),
+                                              const SizedBox(width: 4),
+                                              Text('Preview', style: TextStyle(color: Colors.white.withValues(alpha: 0.7), fontSize: 10, fontWeight: FontWeight.bold)),
+                                            ],
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          // Color Palette Picker
+                          SingleChildScrollView(
+                            scrollDirection: Axis.horizontal,
+                            child: Row(
+                              children: _themeColors.map((color) {
+                                bool isColorSelected = isSelected && _selectedThemeColor == color;
+                                return Padding(
+                                  padding: const EdgeInsets.only(right: 6),
+                                  child: GestureDetector(
+                                    onTap: () {
+                                      setState(() {
+                                        _selectedTheme = theme;
+                                        _selectedThemeColor = color;
+                                      });
+                                      setInnerState(() {}); // Update the preview color
+                                    },
+                                    child: Container(
+                                      width: 18,
+                                      height: 18,
+                                      decoration: BoxDecoration(
+                                        color: color,
+                                        shape: BoxShape.circle,
+                                        border: Border.all(
+                                          color: isColorSelected ? Colors.white : Colors.transparent,
+                                          width: 1.5,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                );
+                              }).toList(),
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(theme, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 15)),
+                          const SizedBox(height: 4),
+                          Text(
+                            _getThemeDescription(theme),
+                            style: TextStyle(color: Colors.white.withValues(alpha: 0.4), fontSize: 12),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
+        ),
+    );
+  }
+
+  Widget _buildResumePreview(String theme, Color primaryColor) {
+    switch (theme) {
+      case 'Professional':
+        return _buildProfessionalPreview(primaryColor);
+      case 'Modern':
+        return _buildModernPreview(primaryColor);
+      case 'Creative':
+        return _buildCreativePreview(primaryColor);
+      case 'ATS-Optimized':
+        return _buildATSPreview(primaryColor);
+      default:
+        return _buildModernPreview(primaryColor);
+    }
+  }
+
+
+
+
+
+  Widget _buildProfessionalPreview(Color primaryColor) {
+    return Container(
+      color: Colors.white,
+      child: Row(
+        children: [
+          Container(
+            width: 45,
+            color: primaryColor,
+            padding: const EdgeInsets.all(8),
+            child: Column(
+              children: [
+                const CircleAvatar(radius: 10, backgroundColor: Colors.white24, child: Icon(Icons.person, size: 10, color: Colors.white)),
+                const SizedBox(height: 8),
+                const Text('Sophie Walton', style: TextStyle(color: Colors.white, fontSize: 4, fontWeight: FontWeight.bold), textAlign: TextAlign.center),
+                const SizedBox(height: 12),
+                _buildSidebarItem('Details'),
+                _buildSidebarItem('Skills'),
+              ],
+            ),
+          ),
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Profile', style: TextStyle(color: primaryColor, fontSize: 6, fontWeight: FontWeight.bold)),
+                  _buildDummyText(4),
+                  const SizedBox(height: 8),
+                  Text('Employment History', style: TextStyle(color: primaryColor, fontSize: 6, fontWeight: FontWeight.bold)),
+                  _buildDummyText(6),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildModernPreview(Color primaryColor) {
+    return Container(
+      color: Colors.white,
+      padding: const EdgeInsets.all(12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(height: 15, width: double.infinity, color: primaryColor.withValues(alpha: 0.1)),
+          const SizedBox(height: 8),
+          Text('ALEXA REED', style: TextStyle(color: primaryColor, fontSize: 8, fontWeight: FontWeight.bold)),
+          const Text('DIGITAL MARKETING MANAGER', style: TextStyle(color: Colors.black54, fontSize: 4)),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(child: _buildDummyText(10)),
+              const SizedBox(width: 8),
+              Container(width: 30, height: 60, color: Colors.grey[100]),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCreativePreview(Color primaryColor) {
+    return Container(
+      color: primaryColor.withValues(alpha: 0.05),
+      padding: const EdgeInsets.all(12),
+      child: Column(
+        children: [
+          CircleAvatar(radius: 15, backgroundColor: primaryColor),
+          const SizedBox(height: 8),
+          Text('JORDAN SMITH', style: TextStyle(color: primaryColor, fontSize: 7, fontWeight: FontWeight.bold)),
+          const SizedBox(height: 12),
+          Wrap(
+            spacing: 4,
+            runSpacing: 4,
+            children: List.generate(6, (i) => Container(width: 20, height: 4, decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(2)))),
+          ),
+          const SizedBox(height: 12),
+          _buildDummyText(5),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildATSPreview(Color primaryColor) {
+    return Container(
+      color: Colors.white,
+      padding: const EdgeInsets.all(12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('JOHN DOE', style: TextStyle(color: primaryColor, fontSize: 10, fontWeight: FontWeight.bold)),
+          const Text('Software Engineer | 123-456-7890 | email@example.com', style: TextStyle(color: Colors.black87, fontSize: 3.5)),
+          const SizedBox(height: 8),
+          _buildATSSection('SUMMARY', primaryColor),
+          _buildATSSection('EXPERIENCE', primaryColor),
+          _buildATSSection('EDUCATION', primaryColor),
+        ],
+      ),
+    );
+  }
+
+
+
+
+
+  Widget _buildATSSection(String title, Color primaryColor) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(title, style: TextStyle(color: primaryColor, fontSize: 5, fontWeight: FontWeight.bold)),
+        Divider(height: 4, thickness: 1, color: primaryColor),
+        _buildDummyText(4),
+        const SizedBox(height: 4),
+      ],
+    );
+  }
+
+  Widget _buildSidebarItem(String title) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 4.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(title, style: const TextStyle(color: Colors.white70, fontSize: 3.5, fontWeight: FontWeight.bold)),
+          Container(height: 1, width: 20, color: Colors.white12),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDummyText(int lines) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: List.generate(lines, (i) => Padding(
+        padding: const EdgeInsets.only(bottom: 1.5),
+        child: Container(
+          height: 1.5,
+          width: i == lines - 1 ? 40 : double.infinity,
+          decoration: BoxDecoration(
+            color: Colors.grey[300],
+            borderRadius: BorderRadius.circular(1),
+          ),
+        ),
+      )),
+    );
+  }
+
+
+  String _getThemeDescription(String theme) {
+    switch (theme) {
+      case 'Professional': return 'Ideal for Doctors, Lawyers & Executives.';
+      case 'Modern': return 'Best for IT, Tech & Software roles.';
+      case 'Creative': return 'Perfect for Designers & Marketing.';
+      case 'ATS-Optimized': return 'Standard for Engineering & Corporate.';
+      default: return 'Professional resume template.';
+    }
+  }
+
   Widget _buildDropdown({
     required String label,
     required String value,
@@ -518,6 +917,67 @@ class _PostJobScreenState extends State<PostJobScreen> {
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
             );
           }).toList(),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildDatePicker(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Expiry Date',
+          style: TextStyle(color: Colors.white.withValues(alpha: 0.7), fontSize: 13, fontWeight: FontWeight.w600),
+        ),
+        const SizedBox(height: 8),
+        InkWell(
+          onTap: () async {
+            final picked = await showDatePicker(
+              context: context,
+              initialDate: _selectedExpiryDate,
+              firstDate: DateTime.now(),
+              lastDate: DateTime.now().add(const Duration(days: 365)),
+              builder: (context, child) {
+                return Theme(
+                  data: Theme.of(context).copyWith(
+                    colorScheme: const ColorScheme.dark(
+                      primary: Color(0xFF6366F1),
+                      onPrimary: Colors.white,
+                      surface: Color(0xFF1E293B),
+                      onSurface: Colors.white,
+                    ),
+                  ),
+                  child: child!,
+                );
+              },
+            );
+            if (picked != null) {
+              setState(() {
+                _selectedExpiryDate = DateTime(picked.year, picked.month, picked.day, 23, 59, 59);
+              });
+            }
+          },
+          child: InputDecorator(
+            decoration: InputDecoration(
+              prefixIcon: const Icon(Icons.calendar_today_outlined, color: Color(0xFF6366F1), size: 20),
+              filled: true,
+              fillColor: Colors.white.withValues(alpha: 0.05),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(16),
+                borderSide: BorderSide.none,
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(16),
+                borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.05)),
+              ),
+              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            ),
+            child: Text(
+              '${_selectedExpiryDate.day}/${_selectedExpiryDate.month}/${_selectedExpiryDate.year}',
+              style: const TextStyle(color: Colors.white, fontSize: 16),
+            ),
+          ),
         ),
       ],
     );

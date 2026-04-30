@@ -17,6 +17,8 @@ class JobService {
     required List<String> requiredSkills,
     String? experienceLevel,
     String? resumeTheme, // Professional, Creative, Modern
+    String? resumeColor, // Hex color for the theme
+    required DateTime expiryDate,
   }) async {
     final user = _auth.currentUser;
     if (user == null) {
@@ -35,12 +37,14 @@ class JobService {
         'requiredSkills': requiredSkills,
         'experienceLevel': experienceLevel ?? 'Any',
         'resumeTheme': resumeTheme ?? 'Modern',
+        'resumeColor': resumeColor ?? 'ff6366f1',
         'employerId': user.uid,
         'employerEmail': user.email,
         'status': 'active',
         'applicants': 0,
         'createdAt': FieldValue.serverTimestamp(),
         'updatedAt': FieldValue.serverTimestamp(),
+        'expiryDate': Timestamp.fromDate(expiryDate),
       });
       debugPrint('Job posted successfully: ${docRef.id}');
       return docRef.id;
@@ -64,6 +68,19 @@ class JobService {
             final data = doc.data();
             data['id'] = doc.id;
             return data;
+          }).where((data) {
+            DateTime expiryDate;
+            if (data['expiryDate'] != null) {
+              expiryDate = (data['expiryDate'] as Timestamp).toDate();
+            } else if (data['createdAt'] != null) {
+              expiryDate = (data['createdAt'] as Timestamp).toDate().add(const Duration(days: 30));
+            } else {
+              expiryDate = DateTime.now().add(const Duration(days: 30));
+            }
+            if (expiryDate.isBefore(DateTime.now())) {
+              return false;
+            }
+            return true;
           }).toList();
           
           // Sort client-side to avoid needing a composite index in Firestore
@@ -88,6 +105,19 @@ class JobService {
             final data = doc.data();
             data['id'] = doc.id;
             return data;
+          }).where((data) {
+            DateTime expiryDate;
+            if (data['expiryDate'] != null) {
+              expiryDate = (data['expiryDate'] as Timestamp).toDate();
+            } else if (data['createdAt'] != null) {
+              expiryDate = (data['createdAt'] as Timestamp).toDate().add(const Duration(days: 30));
+            } else {
+              expiryDate = DateTime.now().add(const Duration(days: 30));
+            }
+            if (expiryDate.isBefore(DateTime.now())) {
+              return false;
+            }
+            return true;
           }).toList();
           
           // Sort client-side to avoid needing a composite index in Firestore
@@ -124,10 +154,27 @@ class JobService {
 
       for (var doc in snapshot.docs) {
         final data = doc.data();
-        if (data['status'] == 'active') {
+        
+        bool isExpired = false;
+        DateTime expiryDate;
+        if (data['expiryDate'] != null) {
+          expiryDate = (data['expiryDate'] as Timestamp).toDate();
+        } else if (data['createdAt'] != null) {
+          expiryDate = (data['createdAt'] as Timestamp).toDate().add(const Duration(days: 30));
+        } else {
+          expiryDate = DateTime.now().add(const Duration(days: 30));
+        }
+        
+        if (expiryDate.isBefore(DateTime.now())) {
+          isExpired = true;
+        }
+        
+        if (!isExpired && data['status'] == 'active') {
           activeJobs++;
         }
-        totalApplicants += (data['applicants'] as num? ?? 0).toInt();
+        if (!isExpired) {
+          totalApplicants += (data['applicants'] as num? ?? 0).toInt();
+        }
       }
 
       return {

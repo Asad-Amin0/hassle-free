@@ -32,8 +32,36 @@ class _SignUpScreenState extends State<SignUpScreen> {
       return;
     }
 
+    final emailRegex = RegExp(r'^[\w-\.]{3,}@([\w-]+\.)+[\w-]{2,4}$');
+    if (!emailRegex.hasMatch(email)) {
+      _showDialog('Invalid Email', 'Please put a proper and valid email format. The part before @ must be at least 3 characters (e.g. john12@example.com).');
+      return;
+    }
+
+    final localPart = email.split('@')[0];
+    final numberCount = localPart.replaceAll(RegExp(r'[^0-9]'), '').length;
+    if (numberCount < 2 || numberCount > 3) {
+      _showDialog('Invalid Email', 'The part before the @ symbol must contain exactly 2 to 3 numbers.');
+      return;
+    }
+
     if (password != confirmPassword) {
       _showDialog('Error', 'Passwords do not match');
+      return;
+    }
+
+    if (password.length < 8 || 
+        !password.contains(RegExp(r'[A-Z]')) || 
+        !password.contains(RegExp(r'[!@#\$%^&*(),.?":{}|<>]'))) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Password is not strong! It must be at least 8 characters, with 1 uppercase letter and 1 special character.'),
+            backgroundColor: Colors.redAccent,
+            duration: Duration(seconds: 4),
+          ),
+        );
+      }
       return;
     }
 
@@ -250,7 +278,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                                   padding: const EdgeInsets.all(5),
                                   decoration: BoxDecoration(
                                     color: Colors.white.withValues(alpha: 0.05),
-                                    borderRadius: BorderRadius.circular(14),
+                                    borderRadius: BorderRadius.circular(30),
                                   ),
                                   child: Row(
                                     children: [
@@ -312,7 +340,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                                       gradient: const LinearGradient(
                                         colors: [Color(0xFF6366F1), Color(0xFF8B5CF6)],
                                       ),
-                                      borderRadius: BorderRadius.circular(16),
+                                      borderRadius: BorderRadius.circular(30),
                                       boxShadow: [
                                         BoxShadow(
                                           color: const Color(0xFF6366F1).withValues(alpha: 0.3),
@@ -327,7 +355,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                                         backgroundColor: Colors.transparent,
                                         shadowColor: Colors.transparent,
                                         shape: RoundedRectangleBorder(
-                                          borderRadius: BorderRadius.circular(16),
+                                          borderRadius: BorderRadius.circular(30),
                                         ),
                                       ),
                                       child: _isLoading
@@ -473,7 +501,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
         padding: const EdgeInsets.symmetric(vertical: 14),
         decoration: BoxDecoration(
           color: isSelected ? Colors.white.withValues(alpha: 0.1) : Colors.transparent,
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(25),
           border: isSelected ? Border.all(color: Colors.white.withValues(alpha: 0.2)) : null,
         ),
         child: Row(

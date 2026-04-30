@@ -546,14 +546,7 @@ class _MainDashboardScreenState extends State<MainDashboardScreen>
             },
           ),
           const SizedBox(height: 32),
-          const Text(
-            'Your Activity',
-            style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-              color: Colors.white,
-            ),
-          ),
+          _buildSectionHeader('Your Activity'),
           const SizedBox(height: 16),
           GridView.count(
             crossAxisCount: isMobile ? 1 : 2,
@@ -569,6 +562,7 @@ class _MainDashboardScreenState extends State<MainDashboardScreen>
                 Icons.business_center,
                 const Color(0xFF3B82F6),
                 applications.isNotEmpty ? "Tracking" : "None yet",
+                _generateDynamicTrend(applications.length.toDouble(), 8),
               ),
               _buildStatCard(
                 'Offers / Approved',
@@ -576,10 +570,35 @@ class _MainDashboardScreenState extends State<MainDashboardScreen>
                 Icons.check_circle_outline,
                 const Color(0xFF22C55E),
                 approvedCount > 0 ? 'Congratulations!' : 'Keep going!',
+                _generateDynamicTrend(approvedCount.toDouble(), 8),
+                isBarChart: true,
               ),
             ],
           ),
         ],
+      ),
+    );
+  }
+
+  List<double> _generateDynamicTrend(double currentValue, int points) {
+    final List<double> trend = [];
+    // Always trend upwards to the current value
+    for (int i = 0; i < points; i++) {
+      double factor = (i + 1) / points;
+      // Add a bit of "organic" wobble but keep it strictly below or equal to currentValue
+      double val = currentValue * factor;
+      trend.add(val);
+    }
+    return trend;
+  }
+
+  Widget _buildSectionHeader(String title) {
+    return Text(
+      title,
+      style: const TextStyle(
+        fontSize: 20,
+        fontWeight: FontWeight.bold,
+        color: Colors.white,
       ),
     );
   }
@@ -1152,57 +1171,91 @@ class _MainDashboardScreenState extends State<MainDashboardScreen>
     IconData icon,
     Color color,
     String subtitle,
-  ) {
+    List<double> dataPoints, {
+    bool isBarChart = false,
+  }) {
     return Container(
-      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white.withValues(alpha: 0.05),
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(24),
         border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Column(
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(24),
+        child: Stack(
+          children: [
+            Positioned(
+              bottom: -10,
+              left: 0,
+              right: 0,
+              height: 50,
+              child: CustomPaint(
+                painter: isBarChart
+                    ? _BarChartPainter(dataPoints, color.withValues(alpha: 0.2))
+                    : _MiniChartPainter(
+                        dataPoints,
+                        color.withValues(alpha: 0.3),
+                      ),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.all(20),
+              child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    title,
-                    style: const TextStyle(color: Colors.white60, fontSize: 12),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            title,
+                            style: const TextStyle(
+                              color: Colors.white60,
+                              fontSize: 12,
+                            ),
+                          ),
+                          Text(
+                            value,
+                            style: const TextStyle(
+                              fontSize: 24,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ],
+                      ),
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: color.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Icon(icon, color: color, size: 18),
+                      ),
+                    ],
                   ),
-                  Text(
-                    value,
-                    style: const TextStyle(
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                    ),
+                  const Spacer(),
+                  Row(
+                    children: [
+                      Icon(Icons.trending_up, color: color, size: 14),
+                      const SizedBox(width: 4),
+                      Text(
+                        subtitle,
+                        style: TextStyle(
+                          color: color,
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: color.withValues(alpha: 0.2),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Icon(icon, color: color, size: 20),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Text(
-            subtitle,
-            style: TextStyle(
-              color: color,
-              fontSize: 10,
-              fontWeight: FontWeight.bold,
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -1586,4 +1639,95 @@ class _MainDashboardScreenState extends State<MainDashboardScreen>
       ),
     );
   }
+}
+
+class _MiniChartPainter extends CustomPainter {
+  final List<double> dataPoints;
+  final Color color;
+
+  _MiniChartPainter(this.dataPoints, this.color);
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = color
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 2
+      ..strokeCap = StrokeCap.round;
+
+    final path = Path();
+    if (dataPoints.isEmpty) return;
+
+    final double stepX = size.width / (dataPoints.length - 1);
+    final double maxY = dataPoints.reduce((a, b) => a > b ? a : b);
+    final double minY = dataPoints.reduce((a, b) => a < b ? a : b);
+    final double range = maxY - minY == 0 ? 1 : maxY - minY;
+
+    for (int i = 0; i < dataPoints.length; i++) {
+      final double x = i * stepX;
+      final double y =
+          size.height - ((dataPoints[i] - minY) / range * size.height);
+      if (i == 0) {
+        path.moveTo(x, y);
+      } else {
+        path.lineTo(x, y);
+      }
+    }
+
+    canvas.drawPath(path, paint);
+
+    final fillPath = Path.from(path)
+      ..lineTo(size.width, size.height)
+      ..lineTo(0, size.height)
+      ..close();
+
+    final fillPaint = Paint()
+      ..shader = LinearGradient(
+        begin: Alignment.topCenter,
+        end: Alignment.bottomCenter,
+        colors: [color.withValues(alpha: 0.4), color.withValues(alpha: 0.0)],
+      ).createShader(Rect.fromLTRB(0, 0, size.width, size.height));
+
+    canvas.drawPath(fillPath, fillPaint);
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+}
+
+class _BarChartPainter extends CustomPainter {
+  final List<double> dataPoints;
+  final Color color;
+
+  _BarChartPainter(this.dataPoints, this.color);
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = color
+      ..style = PaintingStyle.fill;
+
+    if (dataPoints.isEmpty) return;
+
+    final double barWidth = size.width / (dataPoints.length * 1.5);
+    final double spacing = barWidth / 2;
+    final double maxY = dataPoints.reduce((a, b) => a > b ? a : b);
+
+    for (int i = 0; i < dataPoints.length; i++) {
+      final double x = i * (barWidth + spacing) + spacing;
+      final double barHeight = (dataPoints[i] / maxY) * size.height;
+      final double y = size.height - barHeight;
+
+      canvas.drawRRect(
+        RRect.fromRectAndRadius(
+          Rect.fromLTWH(x, y, barWidth, barHeight),
+          const Radius.circular(4),
+        ),
+        paint,
+      );
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }

@@ -46,6 +46,8 @@ class EmployerDashboardScreen extends StatelessWidget {
         children: [
           _buildHeader(context, isMobile),
           const SizedBox(height: 32),
+          _buildSectionHeader('Your Activity'),
+          const SizedBox(height: 16),
 
           StreamBuilder<Map<String, int>>(
             stream: jobService.getEmployerStatsStream(),
@@ -438,6 +440,18 @@ class EmployerDashboardScreen extends StatelessWidget {
     );
   }
 
+  Widget _buildSectionHeader(String title) {
+    return Text(
+      title,
+      style: const TextStyle(
+        fontSize: 24,
+        fontWeight: FontWeight.bold,
+        color: Colors.white,
+        letterSpacing: -0.5,
+      ),
+    );
+  }
+
   Widget _buildStatsRow(bool isMobile, Map<String, int> stats) {
     if (isMobile) {
       return Column(
@@ -449,6 +463,7 @@ class EmployerDashboardScreen extends StatelessWidget {
                 stats['activeJobs'].toString(),
                 Icons.business_center,
                 Colors.blue,
+                _generateDynamicTrend(stats['activeJobs']!.toDouble(), 8),
               ),
               const SizedBox(width: 16),
               _buildStatCard(
@@ -456,6 +471,8 @@ class EmployerDashboardScreen extends StatelessWidget {
                 stats['totalApplicants'].toString(),
                 Icons.people,
                 Colors.purple,
+                _generateDynamicTrend(stats['totalApplicants']!.toDouble(), 8),
+                isBarChart: true,
               ),
             ],
           ),
@@ -467,6 +484,7 @@ class EmployerDashboardScreen extends StatelessWidget {
                 '84%',
                 Icons.auto_awesome,
                 Colors.green,
+                _generateDynamicTrend(84, 8),
               ),
             ],
           ),
@@ -480,6 +498,8 @@ class EmployerDashboardScreen extends StatelessWidget {
           stats['activeJobs'].toString(),
           Icons.business_center,
           Colors.blue,
+          _generateDynamicTrend(stats['activeJobs']!.toDouble(), 8),
+          isBarChart: false,
         ),
         const SizedBox(width: 20),
         _buildStatCard(
@@ -487,6 +507,8 @@ class EmployerDashboardScreen extends StatelessWidget {
           stats['totalApplicants'].toString(),
           Icons.people,
           Colors.purple,
+          _generateDynamicTrend(stats['totalApplicants']!.toDouble(), 8),
+          isBarChart: true,
         ),
         const SizedBox(width: 20),
         _buildStatCard(
@@ -494,9 +516,23 @@ class EmployerDashboardScreen extends StatelessWidget {
           '84%',
           Icons.auto_awesome,
           Colors.green,
+          _generateDynamicTrend(84, 8),
+          isBarChart: false,
         ),
       ],
     );
+  }
+
+  List<double> _generateDynamicTrend(double currentValue, int points) {
+    final List<double> trend = [];
+    // Always trend upwards to the current value
+    for (int i = 0; i < points; i++) {
+      double factor = (i + 1) / points;
+      // Progressive growth towards currentValue
+      double val = currentValue * factor;
+      trend.add(val);
+    }
+    return trend;
   }
 
   Widget _buildStatCard(
@@ -504,46 +540,76 @@ class EmployerDashboardScreen extends StatelessWidget {
     String value,
     IconData icon,
     Color color,
-  ) {
+    List<double> dataPoints, {
+    bool isBarChart = false,
+  }) {
     return Expanded(
       child: Container(
-        padding: const EdgeInsets.all(24),
+        height: 160,
         decoration: BoxDecoration(
           color: Colors.white.withValues(alpha: 0.05),
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(24),
           border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
         ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Container(
-              padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                color: color.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(12),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(24),
+          child: Stack(
+            children: [
+              // Background Graphical Element
+              Positioned(
+                bottom: -10,
+                left: 0,
+                right: 0,
+                height: 80,
+                child: CustomPaint(
+                  painter: isBarChart
+                      ? _BarChartPainter(dataPoints, color.withValues(alpha: 0.2))
+                      : _MiniChartPainter(dataPoints, color.withValues(alpha: 0.3)),
+                ),
               ),
-              child: Icon(icon, color: color, size: 24),
-            ),
-            const SizedBox(height: 20),
-            Text(
-              value,
-              style: const TextStyle(
-                fontSize: 32,
-                fontWeight: FontWeight.bold,
-                color: Colors.white,
-                letterSpacing: -1,
+              Padding(
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(10),
+                          decoration: BoxDecoration(
+                            color: color.withValues(alpha: 0.1),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Icon(icon, color: color, size: 20),
+                        ),
+                        Icon(Icons.trending_up, color: color.withValues(alpha: 0.5), size: 16),
+                      ],
+                    ),
+                    const Spacer(),
+                    Text(
+                      value,
+                      style: const TextStyle(
+                        fontSize: 32,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                        letterSpacing: -1,
+                      ),
+                    ),
+                    Text(
+                      title.toUpperCase(),
+                      style: TextStyle(
+                        color: Colors.white.withValues(alpha: 0.4),
+                        fontSize: 11,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 1,
+                      ),
+                    ),
+                  ],
+                ),
               ),
-            ),
-            Text(
-              title,
-              style: TextStyle(
-                color: Colors.white.withValues(alpha: 0.4),
-                fontSize: 14,
-              ),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -668,6 +734,7 @@ class EmployerDashboardScreen extends StatelessWidget {
                         builder: (context) => ResumeThematicViewer(
                           applicant: applicantFormat,
                           theme: 'Modern',
+                          primaryColor: const Color(0xFF6366F1),
                         ),
                       );
                     },
@@ -858,6 +925,7 @@ class EmployerDashboardScreen extends StatelessWidget {
                 builder: (context) => ResumeThematicViewer(
                   applicant: applicantFormat,
                   theme: 'Modern',
+                  primaryColor: const Color(0xFF6366F1),
                 ),
               );
             },
@@ -873,4 +941,95 @@ class EmployerDashboardScreen extends StatelessWidget {
       ],
     );
   }
+}
+
+class _MiniChartPainter extends CustomPainter {
+  final List<double> dataPoints;
+  final Color color;
+
+  _MiniChartPainter(this.dataPoints, this.color);
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = color
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 2
+      ..strokeCap = StrokeCap.round;
+
+    final path = Path();
+    if (dataPoints.isEmpty) return;
+
+    final double stepX = size.width / (dataPoints.length - 1);
+    final double maxY = dataPoints.reduce((a, b) => a > b ? a : b);
+    final double minY = dataPoints.reduce((a, b) => a < b ? a : b);
+    final double range = maxY - minY == 0 ? 1 : maxY - minY;
+
+    for (int i = 0; i < dataPoints.length; i++) {
+      final double x = i * stepX;
+      final double y = size.height - ((dataPoints[i] - minY) / range * size.height);
+      if (i == 0) {
+        path.moveTo(x, y);
+      } else {
+        path.lineTo(x, y);
+      }
+    }
+
+    canvas.drawPath(path, paint);
+
+    // Add gradient area
+    final fillPath = Path.from(path)
+      ..lineTo(size.width, size.height)
+      ..lineTo(0, size.height)
+      ..close();
+
+    final fillPaint = Paint()
+      ..shader = LinearGradient(
+        begin: Alignment.topCenter,
+        end: Alignment.bottomCenter,
+        colors: [color.withValues(alpha: 0.4), color.withValues(alpha: 0.0)],
+      ).createShader(Rect.fromLTRB(0, 0, size.width, size.height));
+
+    canvas.drawPath(fillPath, fillPaint);
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+}
+
+class _BarChartPainter extends CustomPainter {
+  final List<double> dataPoints;
+  final Color color;
+
+  _BarChartPainter(this.dataPoints, this.color);
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = color
+      ..style = PaintingStyle.fill;
+
+    if (dataPoints.isEmpty) return;
+
+    final double barWidth = size.width / (dataPoints.length * 1.5);
+    final double spacing = barWidth / 2;
+    final double maxY = dataPoints.reduce((a, b) => a > b ? a : b);
+
+    for (int i = 0; i < dataPoints.length; i++) {
+      final double x = i * (barWidth + spacing) + spacing;
+      final double barHeight = (dataPoints[i] / maxY) * size.height;
+      final double y = size.height - barHeight;
+
+      canvas.drawRRect(
+        RRect.fromRectAndRadius(
+          Rect.fromLTWH(x, y, barWidth, barHeight),
+          const Radius.circular(4),
+        ),
+        paint,
+      );
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }

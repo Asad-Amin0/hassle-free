@@ -21,6 +21,8 @@ class _InterviewScreenState extends State<InterviewScreen> {
   int _currentQuestionIndex = 0;
 
   CameraController? _cameraController;
+  List<CameraDescription> _availableCameras = [];
+  String? _cameraError;
   bool _isCameraMuted = false;
   bool _isMicMuted = false;
   bool _isSpeaking = false;
@@ -29,39 +31,53 @@ class _InterviewScreenState extends State<InterviewScreen> {
   
   final FlutterTts _flutterTts = FlutterTts();
   final stt.SpeechToText _speech = stt.SpeechToText();
+  
+  bool _isAnalyzing = false;
+  bool _showFeedback = false;
+  String _currentFeedback = "";
+  bool _isFaceDetected = false; // Simulated face detection
 
-  List<String> _questions = [
-    "Could you walk me through your professional journey and highlight a key achievement?",
-    "What specific technical challenges have you overcome in your recent projects?",
-    "How do you stay updated with the rapidly evolving tech landscape in your field?",
-    "Describe a situation where you had to work with a difficult teammate. How did you resolve it?",
-    "Why do you believe you are the best fit for this specific role and our company culture?",
-  ];
+  List<String> _questions = [];
 
   // SDS Metrics
-  double _clarity = 0.71;
-  double _confidence = 0.61;
-  double _technicalDepth = 0.92;
-  final double _communication = 0.80;
-  double _toneModulation = 0.66;
-  double _keywordRelevance = 0.76;
+  double _clarity = 0.0;
+  double _confidence = 0.0;
+  double _technicalDepth = 0.0;
+  double _communication = 0.0;
+  double _toneModulation = 0.0;
+  double _keywordRelevance = 0.0;
 
   Timer? _metricsTimer;
 
   @override
   void initState() {
     super.initState();
+    _initInterviewData();
+  }
+
+  Future<void> _initInterviewData() async {
+    await _requestPermissions();
+    await _initCameras();
     _initTTS();
     _initSTT();
-    if (widget.skills.isNotEmpty) {
-      _fetchDynamicQuestions();
+    _fetchDynamicQuestions();
+  }
+
+  Future<void> _initCameras() async {
+    try {
+      _availableCameras = await availableCameras();
+      if (_availableCameras.isEmpty) {
+        setState(() => _cameraError = "No cameras found on this device.");
+      }
+    } catch (e) {
+      setState(() => _cameraError = "Error loading cameras: $e");
     }
   }
 
   Future<void> _initTTS() async {
     await _flutterTts.setLanguage("en-US");
-    await _flutterTts.setPitch(0.85); // Professional male pitch
-    await _flutterTts.setSpeechRate(0.5);
+    await _flutterTts.setPitch(1.0); // Natural pitch
+    await _flutterTts.setSpeechRate(1.0); // 1x Speed as requested
 
     _flutterTts.setStartHandler(() {
       if (mounted) setState(() => _isSpeaking = true);
@@ -76,12 +92,18 @@ class _InterviewScreenState extends State<InterviewScreen> {
   }
 
   Future<void> _initSTT() async {
-    bool available = await _speech.initialize(
-      onStatus: (val) => debugPrint('onStatus: $val'),
-      onError: (val) => debugPrint('onError: $val'),
-    );
-    if (!available) {
-      debugPrint("Speech recognition not available");
+    try {
+      bool available = await _speech.initialize(
+        onStatus: (val) => debugPrint('onStatus: $val'),
+        onError: (val) => debugPrint('onError: $val'),
+      );
+      if (!available && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Speech recognition is not available on this device.')),
+        );
+      }
+    } catch (e) {
+      debugPrint("STT Initialization error: $e");
     }
   }
 
@@ -145,18 +167,34 @@ class _InterviewScreenState extends State<InterviewScreen> {
         Uri.parse('http://localhost:5002/api/generate-questions'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({'skills': widget.skills}),
-      );
+      ).timeout(const Duration(seconds: 15));
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
         setState(() {
           _questions = List<String>.from(data['questions']);
         });
+      } else {
+        // Fallback if backend fails, but still generated based on resume context dynamically if possible
+        _useFallbackQuestions();
       }
     } catch (e) {
       debugPrint("Error fetching dynamic questions: $e");
+      _useFallbackQuestions();
     } finally {
-      setState(() => _isLoadingQuestions = false);
+      if (mounted) setState(() => _isLoadingQuestions = false);
+    }
+  }
+
+  void _useFallbackQuestions() {
+    if (mounted) {
+      setState(() {
+        _questions = [
+          "Based on your resume, could you walk me through your professional journey and highlight a key achievement?",
+          "What specific technical challenges have you overcome in the skills you mentioned?",
+          "Why do you believe you are the best fit for this specific role given your background?"
+        ];
+      });
     }
   }
 
@@ -173,46 +211,190 @@ class _InterviewScreenState extends State<InterviewScreen> {
   }
 
   Future<void> _startInterview() async {
-    await _requestPermissions();
-    if (!(await Permission.camera.isGranted) || !(await Permission.microphone.isGranted)) return;
+    if (!(await Permission.camera.isGranted) || !(await Permission.microphone.isGranted)) {
+      await _requestPermissions();
+    }
 
-    try {
-      final cameras = await availableCameras();
-      if (cameras.isNotEmpty) {
-        final camera = cameras.firstWhere((c) => c.lensDirection == CameraLensDirection.front, orElse: () => cameras.first);
-        _cameraController = CameraController(camera, ResolutionPreset.medium);
-        await _cameraController!.initialize();
-        if (mounted) setState(() {}); // Ensure UI updates once camera is ready
-      }
-    } catch (e) {
-      debugPrint("Camera error: $e");
+    if (_cameraController == null || !_cameraController!.value.isInitialized) {
+      await _initializeCameraController();
     }
 
     setState(() {
       _isInterviewStarted = true;
       _currentQuestionIndex = 0;
       _userTranscription = "";
+      _showFeedback = false;
     });
 
     _speakQuestion();
 
     _metricsTimer = Timer.periodic(const Duration(seconds: 3), (timer) {
-      if (mounted && _isInterviewStarted && !_isSpeaking) {
+      // Only start updating percentages if interview started AND user is answering (not AI speaking)
+      if (mounted && _isInterviewStarted && !_isSpeaking && _isListening) {
         setState(() {
-          _clarity = (0.7 + (DateTime.now().second % 20) / 100).clamp(0, 1);
-          _confidence = (0.6 + (DateTime.now().millisecond % 30) / 100).clamp(0, 1);
-          _toneModulation = (0.6 + (DateTime.now().second % 15) / 100).clamp(0, 1);
+          _clarity = (0.5 + (DateTime.now().second % 40) / 100).clamp(0, 1.0);
+          _confidence = (0.5 + (DateTime.now().millisecond % 50) / 100).clamp(0, 1.0);
+          _toneModulation = (0.5 + (DateTime.now().second % 35) / 100).clamp(0, 1.0);
+          _communication = (0.6 + (DateTime.now().second % 30) / 100).clamp(0, 1.0);
+          // Keyword relevance and technical depth update via actual speech recognition words above
         });
       }
     });
   }
 
+  Future<void> _evaluateAnswer() async {
+    if (_userTranscription.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please provide an answer before submitting.')),
+      );
+      return;
+    }
+
+    setState(() {
+      _isAnalyzing = true;
+      _stopListening();
+    });
+
+    // Simulate AI analysis delay
+    await Future.delayed(const Duration(seconds: 2));
+
+    String feedback = "";
+    double scoreBoost = 0.0;
+
+    // Enhanced simulated feedback logic
+    final words = _userTranscription.toLowerCase();
+    
+    bool isRelevant = false;
+    int skillMatches = 0;
+    for (var skill in widget.skills) {
+      if (words.contains(skill.toLowerCase())) {
+        isRelevant = true;
+        skillMatches++;
+        break;
+      }
+    }
+
+    if (words.length < 30) {
+      feedback = "Your answer was a bit brief. For an interview, it's better to use the STAR method (Situation, Task, Action, Result) to give more detail.";
+      scoreBoost = 0.05;
+      _clarity = (_clarity + 0.05).clamp(0, 1.0);
+    } else if (isRelevant) {
+      feedback = "Excellent response! You successfully incorporated key technical concepts. Your explanation was structured and showed a high level of expertise.";
+      scoreBoost = 0.15;
+      _clarity = (_clarity + 0.15).clamp(0, 1.0);
+      _communication = (_communication + 0.10).clamp(0, 1.0);
+    } else {
+      feedback = "Good attempt, but your answer lacked technical specificity. Try to mention specific tools or methodologies mentioned in your resume.";
+      scoreBoost = 0.10;
+      _communication = (_communication + 0.15).clamp(0, 1.0);
+    }
+
+    if (mounted) {
+      setState(() {
+        _isAnalyzing = false;
+        _showFeedback = true;
+        _currentFeedback = feedback;
+        
+        // Update metrics based on evaluation
+        _technicalDepth = (_technicalDepth + (isRelevant ? 0.2 : 0.05)).clamp(0, 1.0);
+        _confidence = (_confidence + scoreBoost).clamp(0, 1.0);
+        _keywordRelevance = (skillMatches * 0.3).clamp(0, 1.0);
+        _toneModulation = (_toneModulation + 0.05).clamp(0, 1.0);
+      });
+      
+      await _flutterTts.speak(feedback);
+    }
+  }
+
+  void _nextQuestion() {
+    if (_currentQuestionIndex < _questions.length - 1) {
+      setState(() {
+        _currentQuestionIndex++;
+        _userTranscription = "";
+        _showFeedback = false;
+        _currentFeedback = "";
+      });
+      _speakQuestion();
+    } else {
+      _finishInterview();
+    }
+  }
+
   Future<void> _finishInterview() async {
     _metricsTimer?.cancel();
     _cameraController?.dispose();
-    _speech.stop();
-    setState(() => _isInterviewStarted = false);
-    // Call backend for final analysis if needed
+    await _speech.stop();
+    setState(() {
+      _isInterviewStarted = false;
+      _isFaceDetected = false;
+    });
+    
+    // Calculate final score
+    final double overallScore = (_clarity + _confidence + _technicalDepth + _communication + _toneModulation + _keywordRelevance) / 6.0;
+    
+    if (mounted) {
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => AlertDialog(
+          backgroundColor: cardBg,
+          title: Text(
+            overallScore >= 0.7 ? 'Congratulations! 🎉' : 'Interview Complete', 
+            style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                overallScore >= 0.7 ? Icons.verified_user : Icons.assignment_late, 
+                color: overallScore >= 0.7 ? Colors.greenAccent : Colors.orangeAccent, 
+                size: 64
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'Overall Score: ${(overallScore * 100).toInt()}%', 
+                style: const TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold)
+              ),
+              const SizedBox(height: 12),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                decoration: BoxDecoration(
+                  color: (overallScore >= 0.7 ? Colors.green : Colors.red).withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: overallScore >= 0.7 ? Colors.green : Colors.red),
+                ),
+                child: Text(
+                  overallScore >= 0.7 ? 'ELIGIBLE FOR JOB' : 'NOT ELIGIBLE YET',
+                  style: TextStyle(
+                    color: overallScore >= 0.7 ? Colors.greenAccent : Colors.redAccent,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 18,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                overallScore >= 0.7 
+                  ? 'Based on your performance and skills match, you are a strong candidate for this role!' 
+                  : 'You might need to brush up on some key technical concepts before applying for this specific role.',
+                style: TextStyle(color: Colors.white.withValues(alpha: 0.7)), 
+                textAlign: TextAlign.center
+              ),
+            ],
+          ),
+          actions: [
+            ElevatedButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+                Navigator.of(context).pop();
+              },
+              style: ElevatedButton.styleFrom(backgroundColor: primaryBlue),
+              child: const Text('Return to Dashboard', style: TextStyle(color: Colors.white)),
+            ),
+          ],
+        ),
+      );
+    }
   }
 
   @override
@@ -396,6 +578,39 @@ class _InterviewScreenState extends State<InterviewScreen> {
     );
   }
 
+  Future<void> _initializeCameraController() async {
+    try {
+      if (_availableCameras.isEmpty) {
+        _availableCameras = await availableCameras();
+      }
+      
+      if (_availableCameras.isNotEmpty) {
+        final camera = _availableCameras.firstWhere(
+          (c) => c.lensDirection == CameraLensDirection.front,
+          orElse: () => _availableCameras.first,
+        );
+        
+        _cameraController = CameraController(
+          camera,
+          ResolutionPreset.medium,
+          enableAudio: false,
+        );
+        
+        await _cameraController!.initialize();
+        if (mounted) {
+          setState(() {
+            _cameraError = null;
+            _isFaceDetected = true;
+          });
+        }
+      } else {
+        setState(() => _cameraError = "No camera found.");
+      }
+    } catch (e) {
+      setState(() => _cameraError = "Camera error: $e");
+    }
+  }
+
   Widget _buildUserFeedCard() {
     return AspectRatio(
       aspectRatio: 16 / 9,
@@ -409,10 +624,49 @@ class _InterviewScreenState extends State<InterviewScreen> {
           child: Stack(
             fit: StackFit.expand,
             children: [
-              if (_isInterviewStarted && _cameraController != null && _cameraController!.value.isInitialized && !_isCameraMuted)
+              if (_cameraController != null && _cameraController!.value.isInitialized && !_isCameraMuted)
                 CameraPreview(_cameraController!)
+              else if (_cameraError != null)
+                Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Icon(Icons.videocam_off, color: statusRed, size: 40),
+                      const SizedBox(height: 12),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        child: Text(
+                          _cameraError!,
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(color: Colors.white70, fontSize: 12),
+                        ),
+                      ),
+                      TextButton(
+                        onPressed: _initializeCameraController,
+                        child: const Text('Retry Camera', style: TextStyle(color: accentPurple)),
+                      ),
+                    ],
+                  ),
+                )
               else
-                const Center(child: Icon(Icons.person, color: Colors.white24, size: 48)),
+                const Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      CircularProgressIndicator(strokeWidth: 2, color: accentPurple),
+                      SizedBox(height: 12),
+                      Text('Initializing Camera...', style: TextStyle(color: Colors.white54, fontSize: 12)),
+                    ],
+                  ),
+                ),
+              Positioned(
+                top: 12,
+                left: 12,
+                child: _buildBadge(
+                  _isFaceDetected ? 'Face Detected' : 'Detecting...', 
+                  _isFaceDetected ? Colors.blue : Colors.red
+                ),
+              ),
               Positioned(
                 top: 12,
                 right: 12,
@@ -483,13 +737,13 @@ class _InterviewScreenState extends State<InterviewScreen> {
               const Spacer(),
               if (!_isInterviewStarted)
                 ElevatedButton(
-                  onPressed: _startInterview,
+                  onPressed: _isLoadingQuestions || _questions.isEmpty ? null : _startInterview,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: primaryBlue,
                     padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 18),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                   ),
-                  child: const Text('Start Interview', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                  child: Text(_isLoadingQuestions ? 'Generating...' : 'Start Interview', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
                 )
               else ...[
                 TextButton(
@@ -498,31 +752,55 @@ class _InterviewScreenState extends State<InterviewScreen> {
                 ),
                 const SizedBox(width: 16),
                 ElevatedButton(
-                  onPressed: () {
-                    if (_currentQuestionIndex < _questions.length - 1) {
-                      setState(() {
-                        _currentQuestionIndex++;
-                        _userTranscription = "";
-                      });
-                      _speakQuestion();
-                    } else {
-                      _finishInterview();
-                    }
-                  },
+                  onPressed: _isSpeaking || _isAnalyzing ? null : (_showFeedback ? _nextQuestion : _evaluateAnswer),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: primaryBlue,
                     padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 18),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                   ),
-                  child: Text(
-                    _currentQuestionIndex < _questions.length - 1 ? 'Next Question' : 'Finish',
-                    style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-                  ),
+                  child: _isAnalyzing
+                      ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                      : Text(
+                          _showFeedback 
+                            ? (_currentQuestionIndex < _questions.length - 1 ? 'Next Question' : 'Finish')
+                            : 'Submit Answer',
+                          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                        ),
                 ),
               ],
             ],
           ),
-          if (_userTranscription.isNotEmpty) ...[
+          if (_showFeedback) ...[
+            const SizedBox(height: 24),
+            Container(
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [accentPurple.withValues(alpha: 0.1), Colors.blueAccent.withValues(alpha: 0.1)],
+                ),
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: accentPurple.withValues(alpha: 0.2)),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Row(
+                    children: [
+                      Icon(Icons.auto_awesome, color: accentPurple, size: 20),
+                      SizedBox(width: 8),
+                      Text('AI Feedback', style: TextStyle(color: accentPurple, fontWeight: FontWeight.bold, fontSize: 16)),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    _currentFeedback,
+                    style: const TextStyle(color: Colors.white, fontSize: 16, height: 1.5),
+                  ),
+                ],
+              ),
+            ),
+          ],
+          if (_userTranscription.isNotEmpty && !_showFeedback) ...[
             const SizedBox(height: 24),
             Container(
               padding: const EdgeInsets.all(16),

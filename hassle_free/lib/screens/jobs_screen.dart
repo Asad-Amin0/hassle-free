@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../services/job_service.dart';
 import '../services/resume_service.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'dart:async';
 
 class JobsScreen extends StatefulWidget {
@@ -325,7 +326,7 @@ class _JobsScreenState extends State<JobsScreen> {
         crossAxisCount: 2,
         crossAxisSpacing: 24,
         mainAxisSpacing: 24,
-        mainAxisExtent: 220,
+        mainAxisExtent: 250,
       ),
       itemBuilder: (context, index) => _buildJobCard(_filteredJobs[index]),
     );
@@ -334,9 +335,25 @@ class _JobsScreenState extends State<JobsScreen> {
   Widget _buildJobCard(Map<String, dynamic> job) {
     bool isHot = job['isHot'];
     int score = job['matchScore'];
+    
+    String expiryText = '';
+    try {
+      DateTime expiryDate;
+      if (job['expiryDate'] != null) {
+        final expiryTimestamp = job['expiryDate'] as Timestamp;
+        expiryDate = expiryTimestamp.toDate();
+      } else if (job['createdAt'] != null) {
+        final createdTimestamp = job['createdAt'] as Timestamp;
+        expiryDate = createdTimestamp.toDate().add(const Duration(days: 30));
+      } else {
+        expiryDate = DateTime.now().add(const Duration(days: 30));
+      }
+      final months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+      expiryText = 'Expires: ${expiryDate.day} ${months[expiryDate.month - 1]} ${expiryDate.year}, ${expiryDate.hour.toString().padLeft(2, '0')}:${expiryDate.minute.toString().padLeft(2, '0')}';
+    } catch (_) {}
 
     return Container(
-      height: 220, // Added fixed height for mobile consistency
+      height: 250, // Added fixed height for mobile consistency
       margin: const EdgeInsets.only(bottom: 16),
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
@@ -402,6 +419,19 @@ class _JobsScreenState extends State<JobsScreen> {
                       '${job['company']} • ${job['location']}',
                       style: TextStyle(color: Colors.white60, fontSize: 14),
                     ),
+                    if (expiryText.isNotEmpty) ...[
+                      const SizedBox(height: 4),
+                      Row(
+                        children: [
+                          const Icon(Icons.timer_outlined, color: Colors.orangeAccent, size: 12),
+                          const SizedBox(width: 4),
+                          Text(
+                            expiryText,
+                            style: const TextStyle(color: Colors.orangeAccent, fontSize: 11, fontWeight: FontWeight.bold),
+                          ),
+                        ],
+                      ),
+                    ],
                   ],
                 ),
               ),

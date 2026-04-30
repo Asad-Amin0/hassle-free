@@ -32,6 +32,27 @@ class _LoginScreenState extends State<LoginScreen> {
       return;
     }
 
+    final emailRegex = RegExp(r'^[\w-\.]{3,}@([\w-]+\.)+[\w-]{2,4}$');
+    if (!emailRegex.hasMatch(email)) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Please put a proper and valid email format.'), backgroundColor: Colors.redAccent),
+        );
+      }
+      return;
+    }
+
+    final localPart = email.split('@')[0];
+    final numberCount = localPart.replaceAll(RegExp(r'[^0-9]'), '').length;
+    if (numberCount < 2 || numberCount > 3) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('The part before the @ symbol must contain exactly 2 to 3 numbers.'), backgroundColor: Colors.redAccent),
+        );
+      }
+      return;
+    }
+
     setState(() => _isLoading = true);
     try {
       await _authService.signInWithEmailPassword(email, password);
@@ -227,7 +248,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                   padding: const EdgeInsets.all(6),
                                   decoration: BoxDecoration(
                                     color: Colors.white.withValues(alpha: 0.05),
-                                    borderRadius: BorderRadius.circular(16),
+                                    borderRadius: BorderRadius.circular(30),
                                   ),
                                   child: Row(
                                     children: [
@@ -288,7 +309,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                       gradient: const LinearGradient(
                                         colors: [Color(0xFF6366F1), Color(0xFF8B5CF6)],
                                       ),
-                                      borderRadius: BorderRadius.circular(16),
+                                      borderRadius: BorderRadius.circular(30),
                                       boxShadow: [
                                         BoxShadow(
                                           color: const Color(0xFF6366F1).withValues(alpha: 0.4),
@@ -303,7 +324,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                         backgroundColor: Colors.transparent,
                                         shadowColor: Colors.transparent,
                                         shape: RoundedRectangleBorder(
-                                          borderRadius: BorderRadius.circular(16),
+                                          borderRadius: BorderRadius.circular(30),
                                         ),
                                       ),
                                       child: _isLoading
@@ -450,7 +471,7 @@ class _LoginScreenState extends State<LoginScreen> {
         padding: const EdgeInsets.symmetric(vertical: 14),
         decoration: BoxDecoration(
           color: isSelected ? Colors.white.withValues(alpha: 0.1) : Colors.transparent,
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(25),
           border: isSelected ? Border.all(color: Colors.white.withValues(alpha: 0.2)) : null,
         ),
         child: Row(

@@ -4,11 +4,13 @@ import 'candidate_avatar.dart';
 class ResumeThematicViewer extends StatelessWidget {
   final Map<String, dynamic> applicant;
   final String theme;
+  final Color primaryColor;
 
   const ResumeThematicViewer({
     super.key,
     required this.applicant,
     required this.theme,
+    required this.primaryColor,
   });
 
   @override
@@ -20,6 +22,8 @@ class ResumeThematicViewer extends StatelessWidget {
         return _buildProfessionalTheme(context, resume);
       case 'Creative':
         return _buildCreativeTheme(context, resume);
+      case 'ATS-Optimized':
+        return _buildATSTheme(context, resume);
       case 'Modern':
       default:
         return _buildModernTheme(context, resume);
@@ -33,97 +37,92 @@ class ResumeThematicViewer extends StatelessWidget {
   ) {
     return Scaffold(
       backgroundColor: Colors.white,
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0,
-        leading: const BackButton(color: Colors.black),
-        title: const Text(
-          'Professional Resume',
-          style: TextStyle(color: Colors.black),
-        ),
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 30),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              applicant['seekerName']?.toUpperCase() ?? 'NAME',
-              style: const TextStyle(
-                fontSize: 32,
-                fontWeight: FontWeight.w300,
-                color: Colors.black,
-                letterSpacing: 2,
+      body: Row(
+        children: [
+          Container(
+            width: 250,
+            color: primaryColor,
+            padding: const EdgeInsets.all(32),
+            child: Column(
+              children: [
+                const SizedBox(height: 40),
+                CandidateAvatar(
+                  seekerId: applicant['seekerId'] ?? '',
+                  seekerName: applicant['seekerName'] ?? '?',
+                  radius: 60,
+                  initialPictureUrl: applicant['profilePictureUrl'] ?? resume['profilePictureUrl'],
+                ),
+                const SizedBox(height: 24),
+                Text(
+                  applicant['seekerName']?.toUpperCase() ?? 'NAME',
+                  style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+                  textAlign: TextAlign.center,
+                ),
+                Text(
+                  applicant['seekerEmail'] ?? '',
+                  style: const TextStyle(color: Colors.white70, fontSize: 12),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 40),
+                _buildSidebarSection('DETAILS', resume),
+                const SizedBox(height: 30),
+                _buildSidebarSection('SKILLS', resume),
+              ],
+            ),
+          ),
+          Expanded(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(48),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                   _buildSectionTitle('PROFILE', primaryColor),
+                   Text(resume['summary'] ?? 'N/A', style: const TextStyle(color: Colors.black87, height: 1.6)),
+                   const SizedBox(height: 40),
+                   _buildSectionTitle('EXPERIENCE', primaryColor),
+                   Text(resume['experience'] ?? 'N/A', style: const TextStyle(color: Colors.black87, height: 1.6)),
+                   const SizedBox(height: 40),
+                   _buildSectionTitle('EDUCATION', primaryColor),
+                   Text(resume['education'] ?? 'N/A', style: const TextStyle(color: Colors.black87, height: 1.6)),
+                ],
               ),
             ),
-            Text(
-              applicant['seekerEmail'] ?? '',
-              style: const TextStyle(color: Colors.black54, fontSize: 14),
-            ),
-            const Divider(height: 40, color: Colors.black12, thickness: 1),
-
-            _buildProfessionalSection(
-              'EDUCATION',
-              resume['education'] ?? 'N/A',
-            ),
-            const SizedBox(height: 30),
-            _buildProfessionalSection(
-              'EXPERIENCE',
-              resume['experience'] ?? 'N/A',
-            ),
-            const SizedBox(height: 30),
-
-            const Text(
-              'SKILLS',
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                fontSize: 16,
-                letterSpacing: 1.5,
-              ),
-            ),
-            const SizedBox(height: 12),
-            Wrap(
-              spacing: 20,
-              runSpacing: 10,
-              children: (List<String>.from(resume['skills'] ?? []))
-                  .map(
-                    (s) => Text(
-                      s,
-                      style: const TextStyle(
-                        fontSize: 14,
-                        color: Colors.black87,
-                      ),
-                    ),
-                  )
-                  .toList(),
-            ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
 
-  Widget _buildProfessionalSection(String title, String content) {
+  Widget _buildSidebarSection(String title, Map<String, dynamic> resume) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          title,
-          style: const TextStyle(
-            fontWeight: FontWeight.bold,
-            fontSize: 16,
-            letterSpacing: 1.5,
-          ),
-        ),
-        const SizedBox(height: 12),
-        Text(
-          content,
-          style: const TextStyle(
-            fontSize: 14,
-            height: 1.6,
-            color: Colors.black87,
-          ),
-        ),
+        Text(title, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, letterSpacing: 1.5, fontSize: 14)),
+        const Divider(color: Colors.white24, thickness: 1, height: 20),
+        if (title == 'SKILLS')
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: (List<String>.from(resume['skills'] ?? [])).map((s) => Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: BoxDecoration(color: Colors.white10, borderRadius: BorderRadius.circular(4)),
+              child: Text(s, style: const TextStyle(color: Colors.white70, fontSize: 11)),
+            )).toList(),
+          )
+        else
+           Text(applicant['seekerEmail'] ?? 'N/A', style: const TextStyle(color: Colors.white70, fontSize: 12)),
+      ],
+    );
+  }
+
+  Widget _buildSectionTitle(String title, Color color) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(title, style: TextStyle(color: color, fontWeight: FontWeight.bold, fontSize: 18, letterSpacing: 1.5)),
+        const SizedBox(height: 8),
+        Container(height: 2, width: 40, color: color),
+        const SizedBox(height: 16),
       ],
     );
   }
@@ -141,16 +140,16 @@ class ResumeThematicViewer extends StatelessWidget {
             expandedHeight: 200,
             floating: false,
             pinned: true,
-            backgroundColor: const Color(0xFFEC4899),
+            backgroundColor: primaryColor,
             flexibleSpace: FlexibleSpaceBar(
               title: Text(
                 applicant['seekerName'] ?? '',
                 style: const TextStyle(fontWeight: FontWeight.bold),
               ),
               background: Container(
-                decoration: const BoxDecoration(
+                decoration: BoxDecoration(
                   gradient: LinearGradient(
-                    colors: [Color(0xFFEC4899), Color(0xFF8B5CF6)],
+                    colors: [primaryColor, primaryColor.withValues(alpha: 0.7)],
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                   ),
@@ -218,9 +217,9 @@ class ResumeThematicViewer extends StatelessWidget {
                             ),
                             child: Text(
                               s,
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontWeight: FontWeight.bold,
-                                color: Color(0xFFEC4899),
+                                color: primaryColor,
                               ),
                             ),
                           ),
@@ -333,10 +332,10 @@ class ResumeThematicViewer extends StatelessWidget {
                   style: const TextStyle(color: Colors.white60, fontSize: 13),
                 ),
                 const SizedBox(height: 48),
-                const Text(
+                Text(
                   'CORE SKILLS',
                   style: TextStyle(
-                    color: Color(0xFF6366F1),
+                    color: primaryColor,
                     fontWeight: FontWeight.bold,
                     letterSpacing: 1,
                   ),
@@ -410,10 +409,10 @@ class ResumeThematicViewer extends StatelessWidget {
         ),
         const SizedBox(height: 16),
         Container(
-          width: 40,
           height: 4,
+          width: 40,
           decoration: BoxDecoration(
-            color: const Color(0xFF6366F1),
+            color: primaryColor,
             borderRadius: BorderRadius.circular(2),
           ),
         ),
@@ -429,4 +428,45 @@ class ResumeThematicViewer extends StatelessWidget {
       ],
     );
   }
+
+  // ─── ATS Optimized Theme ──────────────────────────────────────────────────
+  Widget _buildATSTheme(BuildContext context, Map<String, dynamic> resume) {
+    return Scaffold(
+      backgroundColor: Colors.white,
+      appBar: AppBar(
+        backgroundColor: Colors.white,
+        elevation: 0,
+        leading: const BackButton(color: Colors.black),
+        title: const Text('ATS Optimized Resume', style: TextStyle(color: Colors.black)),
+      ),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(40),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(applicant['seekerName'] ?? '', style: TextStyle(color: primaryColor, fontSize: 24, fontWeight: FontWeight.bold)),
+            Text(applicant['seekerEmail'] ?? '', style: const TextStyle(color: Colors.black, fontSize: 14)),
+            const SizedBox(height: 24),
+            _buildATSViewerSection('EXPERIENCE', resume['experience'] ?? 'N/A'),
+            _buildATSViewerSection('EDUCATION', resume['education'] ?? 'N/A'),
+            _buildATSViewerSection('SKILLS', (List<String>.from(resume['skills'] ?? [])).join(', ')),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildATSViewerSection(String title, String content) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(title, style: TextStyle(color: primaryColor, fontWeight: FontWeight.bold, fontSize: 14)),
+        const Divider(color: Colors.black, thickness: 1.5),
+        Text(content, style: const TextStyle(color: Colors.black, fontSize: 14, height: 1.4)),
+        const SizedBox(height: 24),
+      ],
+    );
+  }
 }
+
+
