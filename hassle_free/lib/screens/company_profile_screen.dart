@@ -101,58 +101,89 @@ class _CompanyProfileScreenState extends State<CompanyProfileScreen> {
   }
 
   Widget _buildHeader(bool isMobile) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'Company Profile',
-              style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Colors.white, letterSpacing: -1),
-            ),
-            Text(
-              'Manage your company details and branding',
-              style: TextStyle(color: Colors.white.withValues(alpha: 0.5)),
-            ),
-          ],
-        ),
         Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            ElevatedButton.icon(
-              onPressed: () {
-                if (_isEditing) {
-                  _saveProfile();
-                } else {
-                  setState(() => _isEditing = true);
-                }
-              },
-              icon: _isLoading 
-                ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                : Icon(_isEditing ? Icons.save : Icons.edit, color: Colors.white, size: 20),
-              label: Text(_isEditing ? 'Save Profile' : 'Edit Profile', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: _isEditing ? Colors.green : const Color(0xFF6366F1),
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Company Profile',
+                    style: TextStyle(
+                        fontSize: 28,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                        letterSpacing: -1),
+                  ),
+                  Text(
+                    'Manage your company details and branding',
+                    style: TextStyle(color: Colors.white.withValues(alpha: 0.5)),
+                  ),
+                ],
               ),
             ),
-            const SizedBox(width: 12),
-            OutlinedButton.icon(
-              onPressed: () => _handleLogout(context),
-              icon: const Icon(Icons.logout, size: 20),
-              label: const Text('Logout', style: TextStyle(fontWeight: FontWeight.bold)),
-              style: OutlinedButton.styleFrom(
-                foregroundColor: Colors.redAccent,
-                side: const BorderSide(color: Colors.redAccent),
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-              ),
-            ),
+            if (!isMobile) _buildHeaderButtons(false),
           ],
         ),
+        if (isMobile) ...[
+          const SizedBox(height: 20),
+          _buildHeaderButtons(true),
+        ],
       ],
     );
+  }
+
+  Widget _buildHeaderButtons(bool isMobile) {
+    final buttons = [
+      ElevatedButton.icon(
+        onPressed: () {
+          if (_isEditing) {
+            _saveProfile();
+          } else {
+            setState(() => _isEditing = true);
+          }
+        },
+        icon: _isLoading
+            ? const SizedBox(
+                width: 16,
+                height: 16,
+                child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+            : Icon(_isEditing ? Icons.save : Icons.edit, color: Colors.white, size: 20),
+        label: Text(_isEditing ? 'Save Profile' : 'Edit Profile',
+            style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+        style: ElevatedButton.styleFrom(
+          backgroundColor: _isEditing ? Colors.green : const Color(0xFF6366F1),
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          minimumSize: isMobile ? const Size(double.infinity, 50) : null,
+        ),
+      ),
+      if (!isMobile) const SizedBox(width: 12) else const SizedBox(height: 12),
+      OutlinedButton.icon(
+        onPressed: () => _handleLogout(context),
+        icon: const Icon(Icons.logout, size: 20),
+        label: const Text('Logout', style: TextStyle(fontWeight: FontWeight.bold)),
+        style: OutlinedButton.styleFrom(
+          foregroundColor: Colors.redAccent,
+          side: const BorderSide(color: Colors.redAccent),
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          minimumSize: isMobile ? const Size(double.infinity, 50) : null,
+        ),
+      ),
+    ];
+
+    return isMobile
+        ? Column(
+            children: buttons,
+          )
+        : Row(
+            children: buttons,
+          );
   }
 
   void _handleLogout(BuildContext context) async {

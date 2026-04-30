@@ -9,8 +9,10 @@ import 'jobs_screen.dart';
 import 'profile_screen.dart';
 import 'interview_screen.dart';
 import 'company_profile_screen.dart';
+import 'login_screen.dart';
 import '../services/resume_service.dart';
 import '../services/job_service.dart';
+import '../services/auth_service.dart';
 
 class MainDashboardScreen extends StatefulWidget {
   final bool isJobSeeker;
@@ -976,6 +978,24 @@ class _MainDashboardScreenState extends State<MainDashboardScreen>
               ),
             ),
             const Spacer(),
+            ListTile(
+              leading: const Icon(Icons.logout, color: Colors.redAccent),
+              title: const Text(
+                'Logout',
+                style: TextStyle(color: Colors.redAccent, fontWeight: FontWeight.bold),
+              ),
+              onTap: () async {
+                await AuthService().signOut();
+                if (context.mounted) {
+                  Navigator.pushAndRemoveUntil(
+                    context,
+                    MaterialPageRoute(builder: (_) => const LoginScreen()),
+                    (route) => false,
+                  );
+                }
+              },
+            ),
+            const SizedBox(height: 10),
             Padding(
               padding: const EdgeInsets.all(16.0),
               child: _buildUpgradeCard(),
