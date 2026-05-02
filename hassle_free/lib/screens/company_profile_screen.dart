@@ -66,7 +66,7 @@ class _CompanyProfileScreenState extends State<CompanyProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
-    bool isMobile = MediaQuery.of(context).size.width < 1100;
+    bool isMobile = MediaQuery.of(context).size.width < 700;
 
     return StreamBuilder<Map<String, dynamic>>(
       stream: _companyService.getCompanyProfileStream(),
@@ -104,35 +104,30 @@ class _CompanyProfileScreenState extends State<CompanyProfileScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        Wrap(
+          alignment: WrapAlignment.spaceBetween,
+          crossAxisAlignment: WrapCrossAlignment.center,
           children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    'Company Profile',
-                    style: TextStyle(
-                        fontSize: 28,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                        letterSpacing: -1),
-                  ),
-                  Text(
-                    'Manage your company details and branding',
-                    style: TextStyle(color: Colors.white.withValues(alpha: 0.5)),
-                  ),
-                ],
-              ),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Company Profile',
+                  style: TextStyle(
+                      fontSize: 28,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                      letterSpacing: -1),
+                ),
+                Text(
+                  'Manage your company details and branding',
+                  style: TextStyle(color: Colors.white.withValues(alpha: 0.5)),
+                ),
+              ],
             ),
-            if (!isMobile) _buildHeaderButtons(false),
+            _buildHeaderButtons(isMobile),
           ],
         ),
-        if (isMobile) ...[
-          const SizedBox(height: 20),
-          _buildHeaderButtons(true),
-        ],
       ],
     );
   }
@@ -177,13 +172,12 @@ class _CompanyProfileScreenState extends State<CompanyProfileScreen> {
       ),
     ];
 
-    return isMobile
-        ? Column(
-            children: buttons,
-          )
-        : Row(
-            children: buttons,
-          );
+    return Wrap(
+      spacing: 12,
+      runSpacing: 12,
+      alignment: isMobile ? WrapAlignment.center : WrapAlignment.end,
+      children: buttons,
+    );
   }
 
   void _handleLogout(BuildContext context) async {

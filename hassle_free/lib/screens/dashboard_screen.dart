@@ -7,7 +7,9 @@ import 'employer_dashboard_screen.dart';
 import 'employer_jobs_screen.dart';
 import 'jobs_screen.dart';
 import 'profile_screen.dart';
-import 'interview_screen.dart';
+import '../features/mock_interview/screens/mock_interview_screen.dart';
+
+
 import 'company_profile_screen.dart';
 import 'login_screen.dart';
 import '../services/resume_service.dart';
@@ -32,6 +34,8 @@ class _MainDashboardScreenState extends State<MainDashboardScreen>
   StreamSubscription? _jobSubscription;
   List<Map<String, dynamic>> _matchedJobs = [];
   List<String> _userSkills = [];
+  String _userCategory = "Software Engineer";
+
   bool _showNotifications = false;
   String? _profilePictureUrl;
 
@@ -57,7 +61,9 @@ class _MainDashboardScreenState extends State<MainDashboardScreen>
                 setState(() {
                   _userName = data['name'];
                   _userSkills = List<String>.from(data['skills'] ?? []);
+                  _userCategory = data['category'] ?? "Software Engineer";
                   _profilePictureUrl = data['profilePictureUrl'];
+
                 });
                 // Re-subscribe job recommendations when skills update
                 _subscribeToJobRecommendations();
@@ -225,7 +231,16 @@ class _MainDashboardScreenState extends State<MainDashboardScreen>
           },
         );
       case 3:
-        return InterviewScreen(skills: _userSkills);
+        return MockInterviewScreen(
+          key: const ValueKey('mock_interview_screen'),
+          userId: AuthService().currentUser?.uid ?? "demo_user",
+          jobRole: _userCategory,
+          skills: _userSkills,
+          onExit: () => setState(() => _selectedIndex = 0),
+        );
+
+
+
       case 4:
         return const ProfileScreen();
       default:
@@ -1728,10 +1743,10 @@ class _BarChartPainter extends CustomPainter {
       ..style = PaintingStyle.fill;
 
     if (dataPoints.isEmpty) return;
-
     final double barWidth = size.width / (dataPoints.length * 1.5);
     final double spacing = barWidth / 2;
     final double maxY = dataPoints.reduce((a, b) => a > b ? a : b);
+
 
     for (int i = 0; i < dataPoints.length; i++) {
       final double x = i * (barWidth + spacing) + spacing;

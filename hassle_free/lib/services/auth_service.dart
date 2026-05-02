@@ -9,6 +9,8 @@ class AuthService {
   AuthService._internal();
 
   final FirebaseAuth _firebaseAuth = FirebaseAuth.instance;
+  User? get currentUser => _firebaseAuth.currentUser;
+
 
   // Only used on mobile (non-web)
   final GoogleSignIn _googleSignIn = GoogleSignIn(

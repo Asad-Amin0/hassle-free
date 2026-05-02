@@ -6,6 +6,8 @@
 	<string>We need access to your camera for mock interview sessions.</string>
 	<key>NSMicrophoneUsageDescription</key>
 	<string>We need access to your microphone for recording interview answers.</string>
+	<key>NSSpeechRecognitionUsageDescription</key>
+	<string>HASSLE-FREE uses speech recognition to evaluate your answers</string>
 	<key>CADisableMinimumFrameDurationOnPhone</key>
 	<true/>
 	<key>CFBundleDevelopmentRegion</key>
