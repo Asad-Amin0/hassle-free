@@ -10,7 +10,7 @@ class TtsService {
   Future<void> init() async {
     if (_isInitialized) return;
     await _tts.setLanguage('en-US');
-    await _tts.setSpeechRate(0.55); // Increased for faster response, but still clear
+    await _tts.setSpeechRate(0.5); // Standard 1x speed
     await _tts.setVolume(1.0);
     await _tts.setPitch(1.1); // Slightly higher pitch for a professional female voice
     

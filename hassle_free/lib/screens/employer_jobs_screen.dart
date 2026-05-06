@@ -3,17 +3,25 @@ import '../services/job_service.dart';
 import 'post_job_screen.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../widgets/resume_thematic_viewer.dart';
+import '../widgets/hoverable_card.dart';
 
 class EmployerJobsScreen extends StatelessWidget {
-  const EmployerJobsScreen({super.key});
+  final bool isDarkMode;
+  const EmployerJobsScreen({super.key, this.isDarkMode = true});
+
+  Color get _textColor => isDarkMode ? Colors.white : Colors.black87;
+  Color get _mutedText => isDarkMode ? Colors.white60 : Colors.black54;
+  Color get _cardBg => isDarkMode ? const Color(0xFF1E293B) : Colors.white;
+  Color get _cardBorder => isDarkMode ? Colors.white.withValues(alpha: 0.1) : Colors.grey.shade300;
+  Color get _bgColor => isDarkMode ? const Color(0xFF0F172A) : const Color(0xFFF1F5F9);
 
   void _deleteJob(BuildContext context, String jobId) async {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        backgroundColor: const Color(0xFF1E293B),
-        title: const Text('Delete Job Posting', style: TextStyle(color: Colors.white)),
-        content: const Text('Are you sure you want to delete this job posting? This action cannot be undone.', style: TextStyle(color: Colors.white70)),
+        backgroundColor: _cardBg,
+        title: Text('Delete Job Posting', style: TextStyle(color: _textColor)),
+        content: Text('Are you sure you want to delete this job posting? This action cannot be undone.', style: TextStyle(color: _mutedText)),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
@@ -75,9 +83,11 @@ class EmployerJobsScreen extends StatelessWidget {
 
     return SingleChildScrollView(
       physics: const BouncingScrollPhysics(),
-      padding: EdgeInsets.symmetric(
-        horizontal: isMobile ? 16 : 32,
-        vertical: isMobile ? 24 : 40,
+      padding: EdgeInsets.fromLTRB(
+        isMobile ? 16 : 32,
+        isMobile ? 12 : 8, // Reduced top padding
+        isMobile ? 16 : 32,
+        isMobile ? 24 : 40,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -86,12 +96,12 @@ class EmployerJobsScreen extends StatelessWidget {
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
+                Text(
                   'Your Job Postings',
-                  style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold, color: Colors.white, letterSpacing: -0.5),
+                  style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold, color: _textColor, letterSpacing: -0.5),
                 ),
                 const SizedBox(height: 4),
-                Text('View and manage all active job listings', style: TextStyle(color: Colors.white.withValues(alpha: 0.5), fontSize: 14)),
+                Text('View and manage all active job listings', style: TextStyle(color: _mutedText, fontSize: 14)),
                 const SizedBox(height: 20),
                 SizedBox(
                   width: double.infinity,
@@ -117,18 +127,18 @@ class EmployerJobsScreen extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
+                    Text(
                       'Your Job Postings',
                       style: TextStyle(
                         fontSize: 28, 
                         fontWeight: FontWeight.bold, 
-                        color: Colors.white,
+                        color: _textColor,
                         letterSpacing: -1,
                       ),
                     ),
                     Text(
                       'View and manage all active job listings',
-                      style: TextStyle(color: Colors.white.withValues(alpha: 0.5)),
+                      style: TextStyle(color: _mutedText),
                     ),
                   ],
                 ),
@@ -190,16 +200,16 @@ class EmployerJobsScreen extends StatelessWidget {
       ),
       child: Column(
         children: [
-          Icon(Icons.business_center, size: 80, color: Colors.white.withValues(alpha: 0.1)),
+          Icon(Icons.business_center, size: 80, color: _mutedText.withValues(alpha: 0.2)),
           const SizedBox(height: 24),
           Text(
             'No job postings yet', 
-            style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.white.withValues(alpha: 0.8))
+            style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: _textColor)
           ),
           const SizedBox(height: 12),
           Text(
             'Create your first job listing to start attracting top talent.', 
-            style: TextStyle(color: Colors.white.withValues(alpha: 0.5), fontSize: 16)
+            style: TextStyle(color: _mutedText, fontSize: 16)
           ),
         ],
       ),
@@ -257,45 +267,44 @@ class EmployerJobsScreen extends StatelessWidget {
     final statusText = isExpired ? 'EXPIRED' : (job['status']?.toString() ?? 'active').toUpperCase();
     final statusColor = isExpired ? Colors.redAccent : (job['status'] == 'active' ? Colors.green : Colors.orange);
     
-    return Container(
-      margin: const EdgeInsets.only(bottom: 16),
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.08),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.2),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      job['title'] ?? 'Unknown Title',
-                      style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      '${job['type']} • ${job['location']} • ${job['experienceLevel']}',
-                      style: TextStyle(color: Colors.white.withValues(alpha: 0.6), fontSize: 14),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    if (expiryText.isNotEmpty) ...[
+    return HoverableCard(
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 16),
+        padding: const EdgeInsets.all(24),
+        decoration: BoxDecoration(
+          color: _cardBg,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: _cardBorder),
+          boxShadow: isDarkMode ? [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.2),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ] : [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.05),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        job['title'] ?? 'Unknown Title',
+                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: _textColor),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
                       const SizedBox(height: 4),
                       Row(
                         children: [
@@ -308,86 +317,86 @@ class EmployerJobsScreen extends StatelessWidget {
                         ],
                       ),
                     ],
-                  ],
+                  ),
                 ),
-              ),
-              Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                    decoration: BoxDecoration(
-                      color: statusColor.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Text(
-                      statusText,
-                      style: TextStyle(
-                        color: statusColor,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 12,
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: statusColor.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        statusText,
+                        style: TextStyle(
+                          color: statusColor,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 12,
+                        ),
                       ),
                     ),
-                  ),
-                  const SizedBox(width: 8),
-                  IconButton(
-                    onPressed: () => _editJob(context, job),
-                    icon: const Icon(Icons.edit_outlined, color: Colors.white54, size: 20),
-                    tooltip: 'Edit Job',
-                  ),
-                  IconButton(
-                    onPressed: () => _deleteJob(context, job['id']),
-                    icon: const Icon(Icons.delete_outline, color: Colors.redAccent, size: 20),
-                    tooltip: 'Delete Job',
-                  ),
-                ],
-              )
-            ],
-          ),
-          const SizedBox(height: 16),
-          Row(
-            children: [
-              Icon(Icons.people_outline, color: Colors.indigoAccent, size: 16),
-              const SizedBox(width: 8),
-              Text(
-                '${job['applicants'] ?? 0} Applicants',
-                style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-              ),
-              const Spacer(),
-              TextButton(
-                onPressed: () => _viewApplicants(context, job),
-                child: const Text('View Applicants', style: TextStyle(color: Color(0xFF6366F1))),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          Text(
-            job['description'] ?? '',
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-            style: TextStyle(color: Colors.white.withValues(alpha: 0.8), fontSize: 14),
-          ),
-          isWebGrid ? const Spacer() : const SizedBox(height: 16),
-          Row(
-            children: [
-              ...skills.take(3).map((s) => Container(
-                margin: const EdgeInsets.only(right: 8),
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.1), 
-                  borderRadius: BorderRadius.circular(8),
+                    const SizedBox(width: 8),
+                    IconButton(
+                      onPressed: () => _editJob(context, job),
+                      icon: Icon(Icons.edit_outlined, color: _mutedText, size: 20),
+                      tooltip: 'Edit Job',
+                    ),
+                    IconButton(
+                      onPressed: () => _deleteJob(context, job['id']),
+                      icon: const Icon(Icons.delete_outline, color: Colors.redAccent, size: 20),
+                      tooltip: 'Delete Job',
+                    ),
+                  ],
                 ),
-                child: Text(s, style: const TextStyle(fontSize: 12, color: Colors.white70)),
-              )),
-              if (skills.length > 3)
-                Text('+${skills.length - 3}', style: TextStyle(color: Colors.white.withValues(alpha: 0.5), fontSize: 12)),
-              const Spacer(),
-              Text(
-                job['salaryRange'] ?? '',
-                style: const TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF6366F1), fontSize: 16),
-              ),
-            ],
-          ),
-        ],
+              ],
+            ),
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                Icon(Icons.people_outline, color: Colors.indigoAccent, size: 16),
+                const SizedBox(width: 8),
+                Text(
+                  '${job['applicants'] ?? 0} Applicants',
+                  style: TextStyle(color: _textColor, fontWeight: FontWeight.bold),
+                ),
+                const Spacer(),
+                TextButton(
+                  onPressed: () => _viewApplicants(context, job),
+                  child: const Text('View Applicants', style: TextStyle(color: Color(0xFF6366F1))),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            Text(
+              job['description'] ?? '',
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(color: Colors.white.withValues(alpha: 0.8), fontSize: 14),
+            ),
+            isWebGrid ? const Spacer() : const SizedBox(height: 16),
+            Row(
+              children: [
+                ...skills.take(3).map((s) => Container(
+                  margin: const EdgeInsets.only(right: 8),
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: isDarkMode ? Colors.white.withValues(alpha: 0.1) : Colors.black.withValues(alpha: 0.05), 
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Text(s, style: TextStyle(fontSize: 12, color: _mutedText)),
+                )),
+                if (skills.length > 3)
+                  Text('+${skills.length - 3}', style: TextStyle(color: _mutedText, fontSize: 12)),
+                const Spacer(),
+                Text(
+                  job['salaryRange'] ?? '',
+                  style: const TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF6366F1), fontSize: 16),
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -404,7 +413,7 @@ class EmployerJobsScreen extends StatelessWidget {
   void _viewApplicants(BuildContext context, Map<String, dynamic> job) {
     showModalBottomSheet(
       context: context,
-      backgroundColor: const Color(0xFF0F172A),
+      backgroundColor: _bgColor,
       isScrollControlled: true,
       shape: const RoundedRectangleBorder(borderRadius: BorderRadius.only(topLeft: Radius.circular(24), topRight: Radius.circular(24))),
       builder: (context) => DraggableScrollableSheet(
@@ -418,21 +427,20 @@ class EmployerJobsScreen extends StatelessWidget {
               margin: const EdgeInsets.symmetric(vertical: 12),
               width: 40,
               height: 4,
-              decoration: BoxDecoration(color: Colors.white24, borderRadius: BorderRadius.circular(2)),
+              decoration: BoxDecoration(color: _mutedText.withValues(alpha: 0.2), borderRadius: BorderRadius.circular(2)),
             ),
             Padding(
               padding: const EdgeInsets.all(24),
               child: Row(
                 children: [
                    Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('Applicants for', style: TextStyle(color: Colors.white60, fontSize: 14)),
-                      Text(job['title'], style: TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold)),
+                      Text('Applicants for', style: TextStyle(color: _mutedText, fontSize: 14)),
+                      Text(job['title'], style: TextStyle(color: _textColor, fontSize: 24, fontWeight: FontWeight.bold)),
                     ],
                   ),
                   const Spacer(),
-                  IconButton(onPressed: () => Navigator.pop(context), icon: const Icon(Icons.close, color: Colors.white)),
+                  IconButton(onPressed: () => Navigator.pop(context), icon: Icon(Icons.close, color: _textColor)),
                 ],
               ),
             ),
@@ -443,7 +451,7 @@ class EmployerJobsScreen extends StatelessWidget {
                   if (snapshot.connectionState == ConnectionState.waiting) return const Center(child: CircularProgressIndicator());
                   final applicants = snapshot.data ?? [];
                   if (applicants.isEmpty) {
-                    return const Center(child: Text('No applicants yet', style: TextStyle(color: Colors.white54)));
+                    return Center(child: Text('No applicants yet', style: TextStyle(color: _mutedText)));
                   }
                   return ListView.builder(
                     controller: scrollController,
@@ -468,9 +476,9 @@ class EmployerJobsScreen extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 16),
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.05),
+        color: _cardBg.withValues(alpha: 0.5),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
+        border: Border.all(color: _cardBorder),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -486,8 +494,8 @@ class EmployerJobsScreen extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(applicant['seekerName'] ?? 'Anonymous', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
-                    Text(applicant['seekerEmail'] ?? '', style: const TextStyle(color: Colors.white54, fontSize: 12)),
+                    Text(applicant['seekerName'] ?? 'Anonymous', style: TextStyle(color: _textColor, fontWeight: FontWeight.bold, fontSize: 16)),
+                    Text(applicant['seekerEmail'] ?? '', style: TextStyle(color: _mutedText, fontSize: 12)),
                   ],
                 ),
               ),
@@ -521,8 +529,8 @@ class EmployerJobsScreen extends StatelessWidget {
             spacing: 8,
             children: skills.take(4).map((s) => Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.05), borderRadius: BorderRadius.circular(6)),
-              child: Text(s, style: const TextStyle(color: Colors.white60, fontSize: 10)),
+              decoration: BoxDecoration(color: isDarkMode ? Colors.white.withValues(alpha: 0.05) : Colors.black.withValues(alpha: 0.03), borderRadius: BorderRadius.circular(6)),
+              child: Text(s, style: TextStyle(color: _mutedText, fontSize: 10)),
             )).toList(),
           ),
           const SizedBox(height: 16),
@@ -558,16 +566,16 @@ class EmployerJobsScreen extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.05),
+        color: _cardBg,
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
+        border: Border.all(color: _cardBorder),
       ),
       child: DropdownButton<String>(
         value: statuses.contains(currentStatus) ? currentStatus : 'pending',
-        dropdownColor: const Color(0xFF0F172A),
+        dropdownColor: _cardBg,
         underline: const SizedBox(),
-        icon: const Icon(Icons.arrow_drop_down, color: Colors.white60, size: 18),
-        style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold),
+        icon: Icon(Icons.arrow_drop_down, color: _mutedText, size: 18),
+        style: TextStyle(color: _textColor, fontSize: 12, fontWeight: FontWeight.bold),
         items: statuses.map((status) {
           return DropdownMenuItem(
             value: status,

@@ -1,6 +1,8 @@
 import 'package:flutter/foundation.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+
 import 'package:google_sign_in/google_sign_in.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class AuthService {
   // Singleton pattern
@@ -9,6 +11,7 @@ class AuthService {
   AuthService._internal();
 
   final FirebaseAuth _firebaseAuth = FirebaseAuth.instance;
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   User? get currentUser => _firebaseAuth.currentUser;
 
 
@@ -45,16 +48,56 @@ class AuthService {
 
   Future<UserCredential> signUpWithEmailPassword(
     String email,
-    String password,
-  ) async {
+    String password, {
+    String? name,
+  }) async {
     try {
-      return await _firebaseAuth.createUserWithEmailAndPassword(
+      final credential = await _firebaseAuth.createUserWithEmailAndPassword(
         email: email,
         password: password,
       );
+      
+      // Save user to Firestore for better error handling during login (email existence check)
+      if (credential.user != null) {
+        await _firestore.collection('users').doc(credential.user!.uid).set({
+          'email': email,
+          'name': name,
+          'createdAt': FieldValue.serverTimestamp(),
+        });
+      }
+      
+      return credential;
     } catch (e) {
       debugPrint('Firebase Sign-Up Error: $e');
       rethrow;
+    }
+  }
+
+  /// Check if an email is registered in our Firestore 'users' collection
+  Future<bool> doesEmailExist(String email) async {
+    try {
+      final result = await _firestore
+          .collection('users')
+          .where('email', isEqualTo: email)
+          .limit(1)
+          .get();
+      return result.docs.isNotEmpty;
+    } catch (e) {
+      debugPrint('Error checking email existence: $e');
+      return false; // Fallback
+    }
+  }
+
+  /// Get user data from Firestore
+  Future<Map<String, dynamic>?> getUserData() async {
+    final user = _firebaseAuth.currentUser;
+    if (user == null) return null;
+    try {
+      final doc = await _firestore.collection('users').doc(user.uid).get();
+      return doc.data();
+    } catch (e) {
+      debugPrint('Error getting user data: $e');
+      return null;
     }
   }
 
@@ -119,6 +162,17 @@ class AuthService {
       return userCredential;
     } catch (e) {
       debugPrint('Mobile Google Sign-In error: $e');
+      rethrow;
+    }
+  }
+
+  // ─── Password Reset ────────────────────────────────────────────────────────
+
+  Future<void> sendPasswordResetEmail(String email) async {
+    try {
+      await _firebaseAuth.sendPasswordResetEmail(email: email);
+    } catch (e) {
+      debugPrint('Password Reset Error: $e');
       rethrow;
     }
   }

@@ -368,4 +368,34 @@ class JobService {
       }).toList();
     });
   }
+
+  // ─── Save Interview Result ────────────────────────────────────────────────
+  Future<bool> saveInterviewResult({
+    required String jobId,
+    required String seekerId,
+    required Map<String, dynamic> resultData,
+  }) async {
+    try {
+      final appQuery = await _db
+          .collection('applications')
+          .where('jobId', isEqualTo: jobId)
+          .where('seekerId', isEqualTo: seekerId)
+          .get();
+
+      if (appQuery.docs.isEmpty) return false;
+
+      final appId = appQuery.docs.first.id;
+      await _db.collection('applications').doc(appId).update({
+        'interviewResult': resultData,
+        'hasInterview': true,
+        'interviewStatus': 'completed',
+        'overallScore': resultData['overallScore'] ?? 0.0,
+      });
+      debugPrint('Interview result saved for application $appId');
+      return true;
+    } catch (e) {
+      debugPrint('Error saving interview result: $e');
+      return false;
+    }
+  }
 }

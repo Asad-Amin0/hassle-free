@@ -8,15 +8,24 @@ import '../services/auth_service.dart';
 import 'login_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
-  const ProfileScreen({super.key});
+  final bool isDarkMode;
+  const ProfileScreen({super.key, this.isDarkMode = true});
 
   @override
   State<ProfileScreen> createState() => _ProfileScreenState();
 }
 
 class _ProfileScreenState extends State<ProfileScreen> {
+  Color get _textColor => Colors.white;
+  Color get _mutedText => Colors.white70;
+  Color get _headingColor => widget.isDarkMode ? Colors.white : Colors.black87;
+  Color get _cardBg => widget.isDarkMode ? const Color(0xFF1E293B) : const Color(0xFF0EA5E9);
+  Color get _cardBorder => widget.isDarkMode ? Colors.white.withValues(alpha: 0.1) : Colors.transparent;
+  Color get _skyBlueBox => widget.isDarkMode ? const Color(0xFF1E293B) : const Color(0xFF0EA5E9);
+
   final ResumeService _resumeService = ResumeService();
   final JobService _jobService = JobService();
+  final AuthService _authService = AuthService();
   String _name = "User";
   String _location = "Lahore, Punjab, Pakistan";
   String _education = "";
@@ -56,10 +65,23 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Future<void> _loadInitialData() async {
+    // 1. Get account data (name from signup)
+    final userData = await _authService.getUserData();
+    if (userData != null && mounted) {
+      setState(() {
+        _name = userData['name'] ?? "User";
+        _location = userData['location'] ?? "Lahore, Punjab, Pakistan";
+      });
+    }
+
+    // 2. Get resume analysis
     final data = await _resumeService.getLatestResumeAnalysis();
     if (data != null && mounted) {
       setState(() {
-        _name = data['name'] ?? "User";
+        // Only override if name was empty in account
+        if (_name == "User" || _name.isEmpty) {
+          _name = data['name'] ?? "User";
+        }
         _location = data['location'] ?? "Lahore, Punjab, Pakistan";
         _education = data['education'] ?? "";
         _experience = data['experience'] ?? "";
@@ -145,45 +167,45 @@ class _ProfileScreenState extends State<ProfileScreen> {
           const SizedBox(height: 32),
           _buildEmployabilityScore(isWeb),
           const SizedBox(height: 32),
-          const Text(
+          Text(
             'Education Details',
             style: TextStyle(
               fontSize: 22,
               fontWeight: FontWeight.bold,
-              color: Colors.white,
+              color: _headingColor,
             ),
           ),
           const SizedBox(height: 16),
           _buildEducationSection(),
           const SizedBox(height: 32),
-          const Text(
+          Text(
             'Professional Experience',
             style: TextStyle(
               fontSize: 22,
               fontWeight: FontWeight.bold,
-              color: Colors.white,
+              color: _headingColor,
             ),
           ),
           const SizedBox(height: 16),
           _buildExperienceSection(),
           const SizedBox(height: 32),
-          const Text(
+          Text(
             'Achievements & Badges',
             style: TextStyle(
               fontSize: 22,
               fontWeight: FontWeight.bold,
-              color: Colors.white,
+              color: _headingColor,
             ),
           ),
           const SizedBox(height: 16),
           _buildBadgeGrid(isWeb),
           const SizedBox(height: 32),
-          const Text(
+          Text(
             'Technical Expertise',
             style: TextStyle(
               fontSize: 22,
               fontWeight: FontWeight.bold,
-              color: Colors.white,
+              color: _headingColor,
             ),
           ),
           const SizedBox(height: 16),
@@ -198,9 +220,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
     return Container(
       padding: const EdgeInsets.all(32),
       decoration: BoxDecoration(
-        color: const Color(0xFF1E293B),
+        color: _skyBlueBox,
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
+        border: Border.all(color: widget.isDarkMode ? Colors.white.withValues(alpha: 0.1) : Colors.transparent),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.2),
@@ -233,7 +255,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               'https://api.dicebear.com/7.x/avataaars/png?seed=$_name',
                             )
                             as ImageProvider,
-                  backgroundColor: const Color(0xFF0F172A),
+                  backgroundColor: widget.isDarkMode ? const Color(0xFF0F172A) : Colors.white,
                 ),
                 Positioned(
                   bottom: 0,
@@ -420,9 +442,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
       width: double.infinity,
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: const Color(0xFF1E293B),
+        color: _cardBg,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
+        border: Border.all(color: _cardBorder),
+        boxShadow: widget.isDarkMode ? null : [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 10)],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -435,12 +458,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 size: 24,
               ),
               const SizedBox(width: 12),
-              const Text(
+              Text(
                 "Extracted Academic History",
                 style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
-                  color: Colors.white,
+                  color: _textColor,
                 ),
               ),
             ],
@@ -461,9 +484,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
       width: double.infinity,
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: const Color(0xFF1E293B),
+        color: _cardBg,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
+        border: Border.all(color: _cardBorder),
+        boxShadow: widget.isDarkMode ? null : [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 10)],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -476,12 +500,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 size: 24,
               ),
               const SizedBox(width: 12),
-              const Text(
+              Text(
                 "Extracted Working Experience",
                 style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
-                  color: Colors.white,
+                  color: _textColor,
                 ),
               ),
             ],
@@ -505,7 +529,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           style: TextStyle(
             fontSize: 15,
             height: 1.6,
-            color: Colors.white.withValues(alpha: 0.8),
+            color: _mutedText,
           ),
         ),
       ];
@@ -535,8 +559,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
               Expanded(
                 child: Text(
                   titleStr,
-                  style: const TextStyle(
-                    color: Colors.white,
+                  style: TextStyle(
+                    color: _textColor,
                     fontWeight: FontWeight.bold,
                     fontSize: 15,
                   ),
@@ -544,7 +568,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               ),
               Text(
                 dateStr,
-                style: const TextStyle(color: Colors.white70, fontSize: 13),
+                style: TextStyle(color: _mutedText, fontSize: 13),
               ),
             ],
           ),
@@ -560,7 +584,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         child: Text(
           cleanLine,
           style: TextStyle(
-            color: Colors.white.withValues(alpha: 0.8),
+            color: _mutedText,
             fontSize: 14,
             height: 1.4,
           ),
@@ -575,16 +599,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
       children: [
         Text(
           value,
-          style: const TextStyle(
+          style: TextStyle(
             fontWeight: FontWeight.bold,
             fontSize: 20,
-            color: Colors.white,
+            color: _textColor,
           ),
         ),
         Text(
           label,
           style: TextStyle(
-            color: Colors.white.withValues(alpha: 0.5),
+            color: _mutedText,
             fontSize: 12,
           ),
         ),
@@ -596,10 +620,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
     return Container(
       padding: const EdgeInsets.all(32),
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
+        gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [Color(0xFF6366F1), Color(0xFF8B5CF6)],
+          colors: widget.isDarkMode 
+              ? [const Color(0xFF6366F1), const Color(0xFF8B5CF6)]
+              : [const Color(0xFF2563EB), const Color(0xFF0EA5E9)],
         ),
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
@@ -716,13 +742,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
       return Container(
         padding: const EdgeInsets.all(24),
         decoration: BoxDecoration(
-          color: const Color(0xFF1E293B),
+          color: _cardBg,
           borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: _cardBorder),
         ),
-        child: const Center(
+        child: Center(
           child: Text(
             "No badges earned yet. Complete your profile to earn badges!",
-            style: TextStyle(color: Colors.white54, fontSize: 14),
+            style: TextStyle(color: _mutedText, fontSize: 14),
           ),
         ),
       );
@@ -747,12 +774,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
         return Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           decoration: BoxDecoration(
-            color: const Color(0xFF1E293B),
+            color: _cardBg,
             borderRadius: BorderRadius.circular(16),
             border: Border.all(
-              color: (def['color'] as Color).withValues(alpha: 0.2),
+              color: widget.isDarkMode ? (def['color'] as Color).withValues(alpha: 0.2) : Colors.grey.shade300,
               width: 1.5,
             ),
+            boxShadow: widget.isDarkMode ? null : [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 10)],
           ),
           child: Row(
             children: [
@@ -761,10 +789,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
               Expanded(
                 child: Text(
                   badgeName,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontWeight: FontWeight.bold,
                     fontSize: 12,
-                    color: Colors.white,
+                    color: _textColor,
                   ),
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
@@ -787,18 +815,19 @@ class _ProfileScreenState extends State<ProfileScreen> {
             (s) => Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               decoration: BoxDecoration(
-                color: const Color(0xFF1E293B),
+                color: _cardBg,
                 borderRadius: BorderRadius.circular(14),
-                border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
+                border: Border.all(color: _cardBorder),
+                boxShadow: widget.isDarkMode ? null : [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 5)],
               ),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Text(
                     s,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontWeight: FontWeight.w600,
-                      color: Colors.white,
+                      color: _textColor,
                       fontSize: 14,
                     ),
                   ),
@@ -825,34 +854,34 @@ class _ProfileScreenState extends State<ProfileScreen> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        backgroundColor: const Color(0xFF1E293B),
-        title: const Text(
+        backgroundColor: widget.isDarkMode ? const Color(0xFF1E293B) : Colors.white,
+        title: Text(
           'Edit Profile',
-          style: TextStyle(color: Colors.white),
+          style: TextStyle(color: _textColor),
         ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             TextField(
               controller: nameController,
-              style: const TextStyle(color: Colors.white),
-              decoration: const InputDecoration(
+              style: TextStyle(color: _textColor),
+              decoration: InputDecoration(
                 labelText: 'Name',
-                labelStyle: TextStyle(color: Colors.white60),
+                labelStyle: TextStyle(color: _mutedText),
                 enabledBorder: UnderlineInputBorder(
-                  borderSide: BorderSide(color: Colors.white24),
+                  borderSide: BorderSide(color: _cardBorder),
                 ),
               ),
             ),
             const SizedBox(height: 16),
             TextField(
               controller: locationController,
-              style: const TextStyle(color: Colors.white),
-              decoration: const InputDecoration(
+              style: TextStyle(color: _textColor),
+              decoration: InputDecoration(
                 labelText: 'Location',
-                labelStyle: TextStyle(color: Colors.white60),
+                labelStyle: TextStyle(color: _mutedText),
                 enabledBorder: UnderlineInputBorder(
-                  borderSide: BorderSide(color: Colors.white24),
+                  borderSide: BorderSide(color: _cardBorder),
                 ),
               ),
             ),

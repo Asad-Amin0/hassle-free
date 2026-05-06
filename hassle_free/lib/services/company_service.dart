@@ -18,6 +18,20 @@ class CompanyService {
         .map((doc) => doc.data() ?? {});
   }
 
+  // ─── Get company profile (one-time fetch) ────────────────────────────────
+  Future<Map<String, dynamic>> getCompanyProfile() async {
+    final user = _auth.currentUser;
+    if (user == null) return {};
+
+    try {
+      final doc = await _db.collection('companies').doc(user.uid).get();
+      return doc.data() ?? {};
+    } catch (e) {
+      debugPrint('Error fetching company profile: $e');
+      return {};
+    }
+  }
+
   // ─── Update company profile ──────────────────────────────────────────────
   Future<bool> updateCompanyProfile(Map<String, dynamic> data) async {
     final user = _auth.currentUser;

@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'resume_screen.dart';
 import 'employer_dashboard_screen.dart';
@@ -37,7 +38,18 @@ class _MainDashboardScreenState extends State<MainDashboardScreen>
   String _userCategory = "Software Engineer";
 
   bool _showNotifications = false;
+  bool _isDarkMode = true;
   String? _profilePictureUrl;
+  int _totalEmployerApplicants = 0;
+  StreamSubscription? _employerApplicantsSubscription;
+
+  Color get _bgColor => _isDarkMode ? const Color(0xFF0F172A) : const Color(0xFFF8FAFC);
+  Color get _textColor => _isDarkMode ? Colors.white : Colors.black87;
+  Color get _cardBg => _isDarkMode ? Colors.white.withValues(alpha: 0.05) : Colors.white;
+  Color get _cardBorder => _isDarkMode ? Colors.white.withValues(alpha: 0.1) : Colors.grey.shade300;
+  Color get _skyBlue => const Color(0xFF0EA5E9);
+  Color get _mutedText => _isDarkMode ? Colors.white54 : Colors.black54;
+  Color get _iconColor => _isDarkMode ? Colors.white : Colors.black87;
 
   @override
   void initState() {
@@ -47,8 +59,34 @@ class _MainDashboardScreenState extends State<MainDashboardScreen>
       vsync: this,
       duration: const Duration(seconds: 10),
     )..repeat(reverse: true);
+    _loadNavigationState();
     _subscribeToUserData();
-    if (_isJobSeeker) _subscribeToJobRecommendations();
+    if (_isJobSeeker) {
+      _subscribeToJobRecommendations();
+    } else {
+      _subscribeToEmployerApplicants();
+    }
+  }
+
+  Future<void> _loadNavigationState() async {
+    final prefs = await SharedPreferences.getInstance();
+    if (mounted) {
+      setState(() {
+        _selectedIndex = prefs.getInt('dashboard_index') ?? 0;
+      });
+    }
+  }
+
+  Future<void> _saveNavigationState(int index) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt('dashboard_index', index);
+  }
+
+  void _updateSelectedIndex(int index) {
+    setState(() {
+      _selectedIndex = index;
+    });
+    _saveNavigationState(index);
   }
 
   void _subscribeToUserData() {
@@ -94,11 +132,22 @@ class _MainDashboardScreenState extends State<MainDashboardScreen>
     });
   }
 
+  void _subscribeToEmployerApplicants() {
+    _employerApplicantsSubscription?.cancel();
+    _employerApplicantsSubscription = JobService().getEmployerAllApplicantsStream().listen((applicants) {
+      if (!mounted) return;
+      setState(() {
+        _totalEmployerApplicants = applicants.length;
+      });
+    });
+  }
+
   @override
   void dispose() {
     _bgAnimationController.dispose();
     _resumeSubscription?.cancel();
     _jobSubscription?.cancel();
+    _employerApplicantsSubscription?.cancel();
     super.dispose();
   }
 
@@ -117,49 +166,37 @@ class _MainDashboardScreenState extends State<MainDashboardScreen>
 
   Widget _buildWebLayout(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF0F172A), // Dark Slate
+      backgroundColor: _bgColor,
       body: Row(
         children: [
           Container(
-            width: 260,
-            color: const Color(0xFF0F172A),
-            padding: const EdgeInsets.all(24),
+            width: 280,
+            color: _bgColor,
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                const SizedBox(height: 40),
                 Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Container(
-                      padding: const EdgeInsets.all(8),
+                      padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
                         gradient: const LinearGradient(
                           colors: [Color(0xFF3B26F2), Color(0xFF9042F6)],
                         ),
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: BorderRadius.circular(16),
                       ),
-                      child: const Icon(
-                        Icons.auto_awesome,
-                        color: Colors.white,
-                        size: 20,
-                      ),
+                      child: const Icon(Icons.auto_awesome, color: Colors.white),
                     ),
-                    const SizedBox(width: 12),
-                    const Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'HASSLE-FREE',
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 18,
-                            color: Colors.white,
-                          ),
-                        ),
-                        Text(
-                          'AI Recruitment',
-                          style: TextStyle(color: Colors.white60, fontSize: 12),
-                        ),
-                      ],
+                    const SizedBox(width: 16),
+                    Text(
+                      'HASSLE-FREE',
+                      style: TextStyle(
+                        color: _textColor,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 20,
+                        letterSpacing: 1,
+                      ),
                     ),
                   ],
                 ),
@@ -186,8 +223,18 @@ class _MainDashboardScreenState extends State<MainDashboardScreen>
           ),
           Expanded(
             child: Container(
-              color: const Color(0xFF020617), // Deep Dark Body
-              child: _buildSelectedScreen(),
+              color: _isDarkMode ? const Color(0xFF020617) : const Color(0xFFF1F5F9),
+              child: Column(
+                children: [
+                  _buildTopHeader(),
+                  if (_showNotifications && _isJobSeeker)
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+                      child: _buildNotificationPanel(),
+                    ),
+                  Expanded(child: _buildSelectedScreen()),
+                ],
+              ),
             ),
           ),
         ],
@@ -199,19 +246,20 @@ class _MainDashboardScreenState extends State<MainDashboardScreen>
     if (!_isJobSeeker) {
       switch (_selectedIndex) {
         case 1:
-          return const EmployerJobsScreen();
+          return EmployerJobsScreen(isDarkMode: _isDarkMode);
         case 2:
-          return const CompanyProfileScreen();
+          return CompanyProfileScreen(isDarkMode: _isDarkMode);
         default:
-          return const EmployerDashboardScreen();
+          return EmployerDashboardScreen(isDarkMode: _isDarkMode);
       }
     }
 
     switch (_selectedIndex) {
       case 1:
-        return const JobsScreen();
+        return JobsScreen(isDarkMode: _isDarkMode);
       case 2:
         return ResumeScreen(
+          isDarkMode: _isDarkMode,
           onNameExtracted: (name) {
             setState(() {
               _userName = name;
@@ -236,13 +284,14 @@ class _MainDashboardScreenState extends State<MainDashboardScreen>
           userId: AuthService().currentUser?.uid ?? "demo_user",
           jobRole: _userCategory,
           skills: _userSkills,
-          onExit: () => setState(() => _selectedIndex = 0),
+          isDarkMode: _isDarkMode,
+          onExit: () => _updateSelectedIndex(0),
         );
 
 
 
       case 4:
-        return const ProfileScreen();
+        return ProfileScreen(isDarkMode: _isDarkMode);
       default:
         return Stack(
           children: [
@@ -263,86 +312,17 @@ class _MainDashboardScreenState extends State<MainDashboardScreen>
 
   Widget _buildDashboardContent(List<Map<String, dynamic>> applications) {
     bool isMobile = MediaQuery.of(context).size.width < 1100;
-    int approvedCount = applications
-        .where((a) => a['status'] == 'approved')
-        .length;
+    final approvedApps = applications.where((a) => a['status'] == 'approved').toList();
+    int approvedCount = approvedApps.length;
+    String approvedNames = approvedApps.isNotEmpty 
+        ? approvedApps.map((a) => a['jobTitle'] ?? 'Job').join(', ') 
+        : 'Keep going!';
 
     return Padding(
       padding: EdgeInsets.all(isMobile ? 16 : 32),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.end,
-            children: [
-              Row(
-                children: [
-                  // Notification Bell with badge
-                  Stack(
-                    clipBehavior: Clip.none,
-                    children: [
-                      GestureDetector(
-                        onTap: () => setState(
-                          () => _showNotifications = !_showNotifications,
-                        ),
-                        child: CircleAvatar(
-                          backgroundColor: Colors.white.withValues(alpha: 0.1),
-                          child: const Icon(
-                            Icons.notifications_none,
-                            color: Colors.white,
-                          ),
-                        ),
-                      ),
-                      if (_matchedJobs.isNotEmpty)
-                        Positioned(
-                          top: -4,
-                          right: -4,
-                          child: Container(
-                            padding: const EdgeInsets.all(4),
-                            decoration: const BoxDecoration(
-                              color: Color(0xFF6366F1),
-                              shape: BoxShape.circle,
-                            ),
-                            child: Text(
-                              '${_matchedJobs.length > 9 ? "9+" : _matchedJobs.length}',
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 10,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ),
-                        ),
-                    ],
-                  ),
-                  const SizedBox(width: 16),
-                  // Profile avatar → tapping opens ProfileScreen
-                  GestureDetector(
-                    onTap: () => setState(
-                      () => _selectedIndex = _isJobSeeker ? 4 : _selectedIndex,
-                    ),
-                    child: CircleAvatar(
-                      backgroundImage:
-                          _profilePictureUrl != null &&
-                              _profilePictureUrl!.startsWith('data:image')
-                          ? MemoryImage(
-                              base64Decode(_profilePictureUrl!.split(',').last),
-                            )
-                          : NetworkImage(
-                                  'https://api.dicebear.com/7.x/avataaars/png?seed=${_userName.isEmpty ? "default" : _userName}',
-                                )
-                                as ImageProvider,
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-          // Inline notification panel
-          if (_showNotifications && _isJobSeeker) ...[
-            const SizedBox(height: 16),
-            _buildNotificationPanel(),
-          ],
           const SizedBox(height: 32),
           Container(
             width: double.infinity,
@@ -470,9 +450,7 @@ class _MainDashboardScreenState extends State<MainDashboardScreen>
                           elevation: 0,
                         ),
                         onPressed: () {
-                          setState(() {
-                            _selectedIndex = 1;
-                          });
+                          _updateSelectedIndex(1);
                         },
                         icon: const Icon(
                           Icons.business_center_outlined,
@@ -491,12 +469,12 @@ class _MainDashboardScreenState extends State<MainDashboardScreen>
           ),
           const SizedBox(height: 32),
           if (applications.isNotEmpty) ...[
-            const Text(
-              'Application Status',
+            Text(
+              'Recent Activity',
               style: TextStyle(
-                fontSize: 20,
+                color: _textColor,
                 fontWeight: FontWeight.bold,
-                color: Colors.white,
+                fontSize: 16,
               ),
             ),
             const SizedBox(height: 16),
@@ -514,16 +492,16 @@ class _MainDashboardScreenState extends State<MainDashboardScreen>
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text(
-                'Recommended Jobs',
+              Text(
+                'Your Applications',
                 style: TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.bold,
-                  color: Colors.white,
+                  color: _textColor,
                 ),
               ),
               TextButton(
-                onPressed: () => setState(() => _selectedIndex = 1),
+                onPressed: () => _updateSelectedIndex(1),
                 child: const Text(
                   'See all',
                   style: TextStyle(color: Color(0xFF6366F1)),
@@ -537,13 +515,13 @@ class _MainDashboardScreenState extends State<MainDashboardScreen>
             builder: (context, snapshot) {
               final jobs = snapshot.data ?? [];
               if (jobs.isEmpty) {
-                return const Text(
+                return Text(
                   'No recommended jobs yet',
-                  style: TextStyle(color: Colors.white60),
+                  style: TextStyle(color: _mutedText),
                 );
               }
               return SizedBox(
-                height: 120,
+                height: 150,
                 child: ListView.builder(
                   scrollDirection: Axis.horizontal,
                   itemCount: jobs.length.clamp(0, 5),
@@ -586,7 +564,7 @@ class _MainDashboardScreenState extends State<MainDashboardScreen>
                 approvedCount.toString(),
                 Icons.check_circle_outline,
                 const Color(0xFF22C55E),
-                approvedCount > 0 ? 'Congratulations!' : 'Keep going!',
+                approvedNames,
                 _generateDynamicTrend(approvedCount.toDouble(), 8),
                 isBarChart: true,
               ),
@@ -612,10 +590,10 @@ class _MainDashboardScreenState extends State<MainDashboardScreen>
   Widget _buildSectionHeader(String title) {
     return Text(
       title,
-      style: const TextStyle(
+      style: TextStyle(
         fontSize: 20,
         fontWeight: FontWeight.bold,
-        color: Colors.white,
+        color: _textColor,
       ),
     );
   }
@@ -624,15 +602,16 @@ class _MainDashboardScreenState extends State<MainDashboardScreen>
     String status = app['status'] ?? 'pending';
     Color statusColor = _getStatusColor(status);
 
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.05),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
-      ),
-      child: Row(
+    return _HoverableCard(
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 12),
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: _cardBg,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: _cardBorder),
+        ),
+        child: Row(
         children: [
           Container(
             padding: const EdgeInsets.all(10),
@@ -657,14 +636,14 @@ class _MainDashboardScreenState extends State<MainDashboardScreen>
               children: [
                 Text(
                   app['jobTitle'] ?? 'Job Title',
-                  style: const TextStyle(
-                    color: Colors.white,
+                  style: TextStyle(
+                    color: _textColor,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
                 Text(
                   'Applied on ${_formatTimestamp(app['appliedAt'])}',
-                  style: const TextStyle(color: Colors.white60, fontSize: 12),
+                  style: TextStyle(color: _mutedText, fontSize: 12),
                 ),
               ],
             ),
@@ -686,7 +665,7 @@ class _MainDashboardScreenState extends State<MainDashboardScreen>
           ),
         ],
       ),
-    );
+    ));
   }
 
   String _formatTimestamp(dynamic timestamp) {
@@ -713,11 +692,9 @@ class _MainDashboardScreenState extends State<MainDashboardScreen>
     return Container(
       width: double.infinity,
       decoration: BoxDecoration(
-        color: const Color(0xFF1E293B),
+        color: _cardBg,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: const Color(0xFF6366F1).withValues(alpha: 0.3),
-        ),
+        border: Border.all(color: _cardBorder),
         boxShadow: [
           BoxShadow(
             color: const Color(0xFF6366F1).withValues(alpha: 0.15),
@@ -750,10 +727,10 @@ class _MainDashboardScreenState extends State<MainDashboardScreen>
                       ),
                     ),
                     const SizedBox(width: 10),
-                    const Text(
-                      'Jobs Matching Your Skills',
+                    Text(
+                      'AI Match Accuracy',
                       style: TextStyle(
-                        color: Colors.white,
+                        color: _textColor,
                         fontWeight: FontWeight.bold,
                         fontSize: 16,
                       ),
@@ -761,9 +738,9 @@ class _MainDashboardScreenState extends State<MainDashboardScreen>
                   ],
                 ),
                 IconButton(
-                  icon: const Icon(
+                  icon: Icon(
                     Icons.close,
-                    color: Colors.white54,
+                    color: _mutedText,
                     size: 20,
                   ),
                   onPressed: () => setState(() => _showNotifications = false),
@@ -774,13 +751,13 @@ class _MainDashboardScreenState extends State<MainDashboardScreen>
           const Divider(color: Colors.white12, height: 1),
           // Job list
           if (_matchedJobs.isEmpty)
-            const Padding(
-              padding: EdgeInsets.all(24),
+            Padding(
+              padding: const EdgeInsets.all(24),
               child: Center(
                 child: Text(
                   'No matching jobs yet.\nUpload your resume to get personalized recommendations!',
                   textAlign: TextAlign.center,
-                  style: TextStyle(color: Colors.white54, fontSize: 14),
+                  style: TextStyle(color: _mutedText, fontSize: 14),
                 ),
               ),
             )
@@ -800,7 +777,7 @@ class _MainDashboardScreenState extends State<MainDashboardScreen>
                 onTap: () {
                   setState(() {
                     _showNotifications = false;
-                    _selectedIndex = 1; // Navigate to Jobs tab
+                    _updateSelectedIndex(1); // Navigate to Jobs tab
                   });
                 },
                 borderRadius: BorderRadius.circular(0),
@@ -812,7 +789,7 @@ class _MainDashboardScreenState extends State<MainDashboardScreen>
                   decoration: BoxDecoration(
                     border: Border(
                       bottom: BorderSide(
-                        color: Colors.white.withValues(alpha: 0.05),
+                        color: _cardBorder,
                       ),
                     ),
                   ),
@@ -840,8 +817,8 @@ class _MainDashboardScreenState extends State<MainDashboardScreen>
                           children: [
                             Text(
                               job['title'] ?? 'Job Title',
-                              style: const TextStyle(
-                                color: Colors.white,
+                              style: TextStyle(
+                                color: _textColor,
                                 fontWeight: FontWeight.bold,
                                 fontSize: 15,
                               ),
@@ -852,7 +829,7 @@ class _MainDashboardScreenState extends State<MainDashboardScreen>
                             Text(
                               '${job['company'] ?? ''} • ${job['location'] ?? ''}',
                               style: TextStyle(
-                                color: Colors.white.withValues(alpha: 0.55),
+                                color: _mutedText,
                                 fontSize: 12,
                               ),
                               maxLines: 1,
@@ -902,15 +879,17 @@ class _MainDashboardScreenState extends State<MainDashboardScreen>
           // Footer
           if (_matchedJobs.length > 5)
             InkWell(
-              onTap: () => setState(() {
-                _showNotifications = false;
-                _selectedIndex = 1;
-              }),
+              onTap: () {
+                setState(() {
+                  _showNotifications = false;
+                });
+                _updateSelectedIndex(1);
+              },
               child: Container(
                 width: double.infinity,
                 padding: const EdgeInsets.symmetric(vertical: 14),
-                decoration: BoxDecoration(
-                  borderRadius: const BorderRadius.only(
+                decoration: const BoxDecoration(
+                  borderRadius: BorderRadius.only(
                     bottomLeft: Radius.circular(20),
                     bottomRight: Radius.circular(20),
                   ),
@@ -933,33 +912,43 @@ class _MainDashboardScreenState extends State<MainDashboardScreen>
 
   Widget _buildMobileLayout(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF020617),
+      backgroundColor: _bgColor,
       appBar: AppBar(
-        backgroundColor: Colors.transparent,
+        backgroundColor: _bgColor,
         elevation: 0,
-        leading: Builder(
-          builder: (context) => IconButton(
-            icon: const Icon(Icons.menu, color: Colors.white),
-            onPressed: () => Scaffold.of(context).openDrawer(),
-          ),
-        ),
-        title: const Text(
-          'HASSLE-FREE',
+        iconTheme: IconThemeData(color: _iconColor),
+        title: Text(
+          _isJobSeeker ? 'Applicant Dashboard' : 'Employer Dashboard',
           style: TextStyle(
-            color: Colors.white,
+            color: _textColor,
             fontWeight: FontWeight.bold,
             fontSize: 18,
           ),
         ),
-        actions: const [],
+        actions: [
+          IconButton(
+            onPressed: () {
+              setState(() => _isDarkMode = !_isDarkMode);
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(_isDarkMode ? 'Dark Mode' : 'Light Mode'),
+                  duration: const Duration(seconds: 1),
+                  backgroundColor: _isDarkMode ? const Color(0xFF1E293B) : Colors.white,
+                ),
+              );
+            },
+            icon: Icon(_isDarkMode ? Icons.light_mode_outlined : Icons.dark_mode_outlined),
+          ),
+          const SizedBox(width: 8),
+        ],
       ),
       drawer: Drawer(
-        backgroundColor: const Color(0xFF0F172A),
+        backgroundColor: _bgColor,
         child: Column(
           children: [
             DrawerHeader(
-              decoration: const BoxDecoration(
-                border: Border(bottom: BorderSide(color: Colors.white10)),
+              decoration: BoxDecoration(
+                border: Border(bottom: BorderSide(color: _cardBorder)),
               ),
               child: Center(
                 child: Row(
@@ -980,10 +969,10 @@ class _MainDashboardScreenState extends State<MainDashboardScreen>
                       ),
                     ),
                     const SizedBox(width: 12),
-                    const Text(
+                    Text(
                       'HASSLE-FREE',
                       style: TextStyle(
-                        color: Colors.white,
+                        color: _textColor,
                         fontWeight: FontWeight.bold,
                         fontSize: 16,
                       ),
@@ -1022,13 +1011,12 @@ class _MainDashboardScreenState extends State<MainDashboardScreen>
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _selectedIndexMap(_selectedIndex),
         onTap: (index) {
-          setState(() {
-            _selectedIndex = _reverseIndexMap(index);
-          });
+          final newIndex = _reverseIndexMap(index);
+          _updateSelectedIndex(newIndex);
         },
-        backgroundColor: const Color(0xFF0F172A),
+        backgroundColor: _bgColor,
         type: BottomNavigationBarType.fixed,
-        selectedItemColor: const Color(0xFF6366F1),
+        selectedItemColor: _skyBlue,
         unselectedItemColor: Colors.grey,
         items: _isJobSeeker
             ? const [
@@ -1105,29 +1093,130 @@ class _MainDashboardScreenState extends State<MainDashboardScreen>
     return 0;
   }
 
+  Widget _buildTopHeader() {
+    bool isMobile = MediaQuery.of(context).size.width < 1100;
+    if (isMobile) return const SizedBox.shrink(); // Handled in AppBar for mobile
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(32, 24, 32, 0),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.end,
+        children: [
+          Row(
+            children: [
+              // Theme Toggle Button
+              GestureDetector(
+                onTap: () {
+                  setState(() {
+                    _isDarkMode = !_isDarkMode;
+                  });
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(_isDarkMode ? 'Dark Mode' : 'Light Mode'),
+                      duration: const Duration(seconds: 1),
+                      backgroundColor: _isDarkMode ? const Color(0xFF1E293B) : Colors.white,
+                    ),
+                  );
+                },
+                child: CircleAvatar(
+                  backgroundColor: _isDarkMode ? Colors.white.withValues(alpha: 0.1) : Colors.grey.shade200,
+                  child: Icon(
+                    _isDarkMode ? Icons.light_mode_outlined : Icons.dark_mode_outlined,
+                    color: _iconColor,
+                    size: 22,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 16),
+              // Notification Bell
+              Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  GestureDetector(
+                    onTap: () => setState(() => _showNotifications = !_showNotifications),
+                    child: CircleAvatar(
+                      backgroundColor: _isDarkMode ? Colors.white.withValues(alpha: 0.1) : Colors.grey.shade200,
+                      child: Icon(Icons.notifications_none, color: _iconColor),
+                    ),
+                  ),
+                  if ((_isJobSeeker && _matchedJobs.isNotEmpty) || (!_isJobSeeker && _totalEmployerApplicants > 0))
+                    Positioned(
+                      top: -4,
+                      right: -4,
+                      child: Container(
+                        padding: const EdgeInsets.all(4),
+                        decoration: const BoxDecoration(color: Color(0xFF6366F1), shape: BoxShape.circle),
+                        child: Text(
+                          _isJobSeeker 
+                            ? '${_matchedJobs.length > 9 ? "9+" : _matchedJobs.length}'
+                            : '${_totalEmployerApplicants > 9 ? "9+" : _totalEmployerApplicants}',
+                          style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+              const SizedBox(width: 16),
+              // Profile avatar
+              GestureDetector(
+                onTap: () {
+                  if (_isJobSeeker) _updateSelectedIndex(4);
+                },
+                child: CircleAvatar(
+                  backgroundImage: _profilePictureUrl != null && _profilePictureUrl!.startsWith('data:image')
+                      ? MemoryImage(base64Decode(_profilePictureUrl!.split(',').last))
+                      : NetworkImage('https://api.dicebear.com/7.x/avataaars/png?seed=${_userName.isEmpty ? "default" : _userName}') as ImageProvider,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildUpgradeCard() {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.05),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
+        gradient: _isDarkMode
+            ? null
+            : const LinearGradient(
+                colors: [Color(0xFFF0F9FF), Color(0xFFE0F2FE)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+        color: _isDarkMode ? _cardBg : null,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: _isDarkMode ? _cardBorder : const Color(0xFFBAE6FD),
+          width: _isDarkMode ? 1 : 1.5,
+        ),
+        boxShadow: _isDarkMode
+            ? null
+            : [
+                BoxShadow(
+                  color: const Color(0xFF0EA5E9).withValues(alpha: 0.1),
+                  blurRadius: 20,
+                  offset: const Offset(0, 8),
+                )
+              ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             'Upgrade to Pro',
-            style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
+            style: TextStyle(fontWeight: FontWeight.bold, color: _textColor),
           ),
-          const Text(
+          Text(
             'Get unlimited AI features',
-            style: TextStyle(fontSize: 12, color: Colors.white70),
+            style: TextStyle(fontSize: 12, color: _mutedText),
           ),
           const SizedBox(height: 12),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF6366F1),
+              backgroundColor: _skyBlue,
               minimumSize: const Size(double.infinity, 40),
             ),
             onPressed: _showUpgradeDialog,
@@ -1144,7 +1233,7 @@ class _MainDashboardScreenState extends State<MainDashboardScreen>
   Widget _buildSidebarItem(int index, IconData icon, String title) {
     bool isSelected = _selectedIndex == index;
     return GestureDetector(
-      onTap: () => setState(() => _selectedIndex = index),
+      onTap: () => _updateSelectedIndex(index),
       child: Container(
         margin: const EdgeInsets.only(bottom: 8),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -1211,9 +1300,10 @@ class _MainDashboardScreenState extends State<MainDashboardScreen>
   }) {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.05),
+        color: _cardBg,
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
+        border: Border.all(color: _cardBorder),
+        boxShadow: _isDarkMode ? null : [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 10)],
       ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(24),
@@ -1246,26 +1336,27 @@ class _MainDashboardScreenState extends State<MainDashboardScreen>
                         children: [
                           Text(
                             title,
-                            style: const TextStyle(
-                              color: Colors.white60,
+                            style: TextStyle(
+                              color: _mutedText,
                               fontSize: 12,
                             ),
                           ),
+                          const SizedBox(height: 4),
                           Text(
                             value,
-                            style: const TextStyle(
+                            style: TextStyle(
+                              color: _textColor,
                               fontSize: 24,
                               fontWeight: FontWeight.bold,
-                              color: Colors.white,
                             ),
                           ),
                         ],
                       ),
                       Container(
-                        padding: const EdgeInsets.all(8),
+                        padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
                           color: color.withValues(alpha: 0.1),
-                          borderRadius: BorderRadius.circular(8),
+                          borderRadius: BorderRadius.circular(12),
                         ),
                         child: Icon(icon, color: color, size: 18),
                       ),
@@ -1276,12 +1367,16 @@ class _MainDashboardScreenState extends State<MainDashboardScreen>
                     children: [
                       Icon(Icons.trending_up, color: color, size: 14),
                       const SizedBox(width: 4),
-                      Text(
-                        subtitle,
-                        style: TextStyle(
-                          color: color,
-                          fontSize: 10,
-                          fontWeight: FontWeight.bold,
+                      Expanded(
+                        child: Text(
+                          subtitle,
+                          style: TextStyle(
+                            color: color,
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
                       ),
                     ],
@@ -1334,23 +1429,26 @@ class _MainDashboardScreenState extends State<MainDashboardScreen>
   }
 
   Widget _buildCompactJobCard(String title, String company, String location) {
-    return Container(
-      width: 220,
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.05),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
-      ),
-      child: Column(
+    return _HoverableCard(
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 16),
+        padding: const EdgeInsets.all(20),
+        width: 220,
+        decoration: BoxDecoration(
+          color: _cardBg,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: _cardBorder),
+          boxShadow: _isDarkMode ? null : [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 10)],
+        ),
+        child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             title,
-            style: const TextStyle(
+            style: TextStyle(
               fontWeight: FontWeight.bold,
               fontSize: 16,
-              color: Colors.white,
+              color: _textColor,
             ),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
@@ -1358,23 +1456,23 @@ class _MainDashboardScreenState extends State<MainDashboardScreen>
           const SizedBox(height: 4),
           Text(
             company,
-            style: const TextStyle(color: Colors.white60, fontSize: 13),
+            style: TextStyle(color: _mutedText, fontSize: 13),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
           ),
           const Spacer(),
           Row(
             children: [
-              const Icon(
+              Icon(
                 Icons.location_on_outlined,
                 size: 14,
-                color: Color(0xFF6366F1),
+                color: _skyBlue,
               ),
               const SizedBox(width: 6),
               Expanded(
                 child: Text(
                   location,
-                  style: const TextStyle(color: Colors.white60, fontSize: 12),
+                  style: TextStyle(color: _mutedText, fontSize: 12),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -1383,19 +1481,20 @@ class _MainDashboardScreenState extends State<MainDashboardScreen>
           ),
         ],
       ),
-    );
+    ));
   }
 
   void _showUpgradeDialog() {
     showDialog(
       context: context,
       builder: (context) => Dialog(
-        backgroundColor: Colors.transparent,
+        backgroundColor: _bgColor,
+        surfaceTintColor: Colors.transparent,
         insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 40),
         child: Container(
           constraints: const BoxConstraints(maxWidth: 900),
           decoration: BoxDecoration(
-            color: const Color(0xFF0F172A),
+            color: _bgColor,
             borderRadius: BorderRadius.circular(32),
             border: Border.all(
               color: Colors.white.withValues(alpha: 0.1),
@@ -1403,7 +1502,7 @@ class _MainDashboardScreenState extends State<MainDashboardScreen>
             ),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withValues(alpha: 0.5),
+                color: _isDarkMode ? Colors.black.withValues(alpha: 0.2) : Colors.white.withValues(alpha: 0.8),
                 blurRadius: 50,
                 spreadRadius: 10,
               ),
@@ -1423,23 +1522,23 @@ class _MainDashboardScreenState extends State<MainDashboardScreen>
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          const Column(
+                          Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
                                 'Choose Your Plan',
                                 style: TextStyle(
-                                  color: Colors.white,
+                                  color: _textColor,
                                   fontSize: 32,
                                   fontWeight: FontWeight.w900,
                                   letterSpacing: -1,
                                 ),
                               ),
-                              SizedBox(height: 8),
+                              const SizedBox(height: 8),
                               Text(
                                 'Unlock the full power of HASSLE-FREE AI',
                                 style: TextStyle(
-                                  color: Color(0xFF94A3B8),
+                                  color: _mutedText,
                                   fontSize: 16,
                                 ),
                               ),
@@ -1447,9 +1546,9 @@ class _MainDashboardScreenState extends State<MainDashboardScreen>
                           ),
                           IconButton(
                             onPressed: () => Navigator.pop(context),
-                            icon: const Icon(
+                            icon: Icon(
                               Icons.close,
-                              color: Color(0xFF94A3B8),
+                              color: _mutedText,
                               size: 30,
                             ),
                           ),
@@ -1545,14 +1644,18 @@ class _MainDashboardScreenState extends State<MainDashboardScreen>
       width: 260,
       padding: const EdgeInsets.all(32),
       decoration: BoxDecoration(
-        color: isRecommended
-            ? Colors.white.withValues(alpha: 0.05)
-            : Colors.white.withValues(alpha: 0.02),
+        color: _isDarkMode
+            ? (isRecommended
+                ? Colors.white.withValues(alpha: 0.05)
+                : Colors.white.withValues(alpha: 0.02))
+            : (isRecommended
+                ? gradient[0].withValues(alpha: 0.05)
+                : Colors.grey.withValues(alpha: 0.05)),
         borderRadius: BorderRadius.circular(24),
         border: Border.all(
           color: isRecommended
               ? gradient[0].withValues(alpha: 0.5)
-              : Colors.white.withValues(alpha: 0.1),
+              : (_isDarkMode ? Colors.white.withValues(alpha: 0.1) : Colors.grey.shade300),
           width: isRecommended ? 2 : 1,
         ),
       ),
@@ -1578,8 +1681,8 @@ class _MainDashboardScreenState extends State<MainDashboardScreen>
             ),
           Text(
             title,
-            style: const TextStyle(
-              color: Colors.white,
+            style: TextStyle(
+              color: _textColor,
               fontSize: 24,
               fontWeight: FontWeight.bold,
             ),
@@ -1590,18 +1693,18 @@ class _MainDashboardScreenState extends State<MainDashboardScreen>
             children: [
               Text(
                 price,
-                style: const TextStyle(
-                  color: Colors.white,
+                style: TextStyle(
+                  color: _textColor,
                   fontSize: 36,
                   fontWeight: FontWeight.w900,
                 ),
               ),
               if (price != 'Free')
-                const Padding(
-                  padding: EdgeInsets.only(bottom: 6, left: 4),
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 6, left: 4),
                   child: Text(
                     '/mo',
-                    style: TextStyle(color: Color(0xFF94A3B8)),
+                    style: TextStyle(color: _mutedText),
                   ),
                 ),
             ],
@@ -1621,8 +1724,8 @@ class _MainDashboardScreenState extends State<MainDashboardScreen>
                   Expanded(
                     child: Text(
                       f,
-                      style: const TextStyle(
-                        color: Color(0xFFCBD5E1),
+                      style: TextStyle(
+                        color: _textColor.withValues(alpha: 0.8),
                         fontSize: 14,
                       ),
                     ),
@@ -1646,7 +1749,7 @@ class _MainDashboardScreenState extends State<MainDashboardScreen>
                   borderRadius: BorderRadius.circular(12),
                   side: isRecommended
                       ? BorderSide.none
-                      : BorderSide(color: Colors.white.withValues(alpha: 0.2)),
+                      : BorderSide(color: _textColor.withValues(alpha: 0.2)),
                 ),
               ),
               child: Ink(
@@ -1765,4 +1868,47 @@ class _BarChartPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+}
+
+class _HoverableCard extends StatefulWidget {
+  final Widget child;
+  
+  const _HoverableCard({required this.child});
+
+  @override
+  State<_HoverableCard> createState() => _HoverableCardState();
+}
+
+class _HoverableCardState extends State<_HoverableCard> {
+  bool _isHovered = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return MouseRegion(
+      onEnter: (_) => setState(() => _isHovered = true),
+      onExit: (_) => setState(() => _isHovered = false),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        transform: Matrix4.translationValues(0.0, _isHovered ? -5.0 : 0.0, 0.0),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: _isHovered
+              ? [
+                  BoxShadow(
+                    color: const Color(0xFF6366F1).withValues(alpha: 0.2),
+                    blurRadius: 20,
+                    offset: const Offset(0, 10),
+                  ),
+                  BoxShadow(
+                    color: Colors.white.withValues(alpha: 0.1),
+                    blurRadius: 10,
+                    spreadRadius: 2,
+                  )
+                ]
+              : [],
+        ),
+        child: widget.child,
+      ),
+    );
+  }
 }

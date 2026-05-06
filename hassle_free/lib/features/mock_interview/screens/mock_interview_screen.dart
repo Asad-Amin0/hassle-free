@@ -16,6 +16,8 @@ class MockInterviewScreen extends StatefulWidget {
   final String userId;
   final String jobRole;
   final List<String> skills; // Pulled from user's parsed resume
+  final bool isDarkMode;
+  final String? jobId;
   final VoidCallback? onExit;
 
   const MockInterviewScreen({
@@ -23,6 +25,8 @@ class MockInterviewScreen extends StatefulWidget {
     required this.userId,
     required this.jobRole,
     required this.skills,
+    this.isDarkMode = true,
+    this.jobId,
     this.onExit,
   });
 
@@ -34,16 +38,17 @@ class MockInterviewScreen extends StatefulWidget {
 class _MockInterviewScreenState extends State<MockInterviewScreen> {
   bool _navigatedToResults = false;
 
+  Color get _bgColor => widget.isDarkMode ? const Color(0xFF0F172A) : const Color(0xFFF8FAFC);
+  Color get _textColor => widget.isDarkMode ? Colors.white : Colors.black87;
+  Color get _cardBorder => widget.isDarkMode ? Colors.white.withValues(alpha: 0.1) : Colors.grey.shade300;
+  Color get _mutedText => widget.isDarkMode ? Colors.white70 : Colors.black54;
+
   @override
 
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<MockInterviewViewModel>().startSession(
-        userId: widget.userId,
-        jobRole: widget.jobRole,
-        skills: widget.skills,
-      );
+      // Manual start required
     });
   }
 
@@ -64,7 +69,7 @@ class _MockInterviewScreenState extends State<MockInterviewScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF0F172A),
+      backgroundColor: _bgColor,
       body: Consumer<MockInterviewViewModel>(
         builder: (context, vm, _) {
           // Navigate to results when completed
@@ -84,6 +89,7 @@ class _MockInterviewScreenState extends State<MockInterviewScreen> {
                         userId: widget.userId,
                         jobRole: widget.jobRole,
                         skills: widget.skills,
+                        jobId: widget.jobId,
                       );
                     },
                   ),
@@ -99,7 +105,7 @@ class _MockInterviewScreenState extends State<MockInterviewScreen> {
                 Expanded(
                   child: vm.isLoading
                       ? _buildLoading()
-                      : _buildInterviewBody(vm),
+                      : (vm.session == null ? _buildStartScreen(vm) : _buildInterviewBody(vm)),
                 ),
               ],
             ),
@@ -122,10 +128,10 @@ class _MockInterviewScreenState extends State<MockInterviewScreen> {
             child: Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: Colors.white10,
+                color: _cardBorder,
                 borderRadius: BorderRadius.circular(10),
               ),
-              child: const Icon(Icons.close, color: Colors.white70, size: 20),
+              child: Icon(Icons.close, color: _mutedText, size: 20),
             ),
           ),
           const SizedBox(width: 12),
@@ -137,8 +143,8 @@ class _MockInterviewScreenState extends State<MockInterviewScreen> {
               children: [
                 Text(
                   widget.jobRole,
-                  style: const TextStyle(
-                    color: Colors.white,
+                  style: TextStyle(
+                    color: _textColor,
                     fontWeight: FontWeight.w700,
                     fontSize: 15,
                   ),
@@ -146,11 +152,24 @@ class _MockInterviewScreenState extends State<MockInterviewScreen> {
                 if (session != null)
                   Text(
                     'Question ${session.currentQuestionIndex + 1} of ${session.totalQuestions}',
-                    style: const TextStyle(color: Colors.white54, fontSize: 12),
+                    style: TextStyle(color: _mutedText, fontSize: 12),
                   ),
               ],
             ),
           ),
+
+          // End Interview button
+          if (session != null && session.status != InterviewStatus.completed)
+            TextButton.icon(
+              onPressed: () => _confirmEndInterview(vm),
+              icon: const Icon(Icons.stop_circle_outlined, color: Colors.redAccent, size: 18),
+              label: const Text('End', style: TextStyle(color: Colors.redAccent, fontWeight: FontWeight.bold)),
+              style: TextButton.styleFrom(
+                backgroundColor: Colors.redAccent.withValues(alpha: 0.1),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              ),
+            ),
+          const SizedBox(width: 8),
 
           // Points
           if (session != null)
@@ -175,6 +194,71 @@ class _MockInterviewScreenState extends State<MockInterviewScreen> {
     );
   }
 
+  // ─── Start Screen ──────────────────────────────────────────────────────────
+  Widget _buildStartScreen(MockInterviewViewModel vm) {
+    return Center(
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: const Color(0xFF4F46E5).withValues(alpha: 0.1),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(Icons.mic_none_rounded, color: Color(0xFF4F46E5), size: 60),
+            ),
+            const Gap(32),
+            Text(
+              'Ready to begin?',
+              style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: _textColor),
+            ),
+            const Gap(16),
+            Text(
+              'Your AI interviewer is ready to evaluate your skills in ${widget.jobRole}.',
+              textAlign: TextAlign.center,
+              style: TextStyle(color: _mutedText, fontSize: 16, height: 1.5),
+            ),
+            const Gap(40),
+            SizedBox(
+              width: 240,
+              height: 60,
+              child: ElevatedButton(
+                onPressed: () => vm.startSession(
+                  userId: widget.userId,
+                  jobRole: widget.jobRole,
+                  skills: widget.skills,
+                ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF4F46E5),
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
+                  elevation: 8,
+                  shadowColor: const Color(0xFF4F46E5).withValues(alpha: 0.5),
+                ),
+                child: const Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.play_arrow_rounded),
+                    Gap(8),
+                    Text('Start Interview', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                  ],
+                ),
+              ),
+            ),
+            const Gap(24),
+            Text(
+              'Ensure you are in a quiet environment.',
+              style: TextStyle(color: _mutedText, fontSize: 12),
+            ),
+          ],
+        ),
+      ),
+    ).animate().fadeIn(duration: 600.ms).slideY(begin: 0.1, curve: Curves.easeOut);
+  }
+
   // ─── Loading ──────────────────────────────────────────────────────────────
   Widget _buildLoading() {
     return Center(
@@ -183,10 +267,10 @@ class _MockInterviewScreenState extends State<MockInterviewScreen> {
         children: [
           const CircularProgressIndicator(color: Color(0xFF4F46E5)),
           const Gap(20),
-          const Text(
+          Text(
             'Preparing your interview questions\nusing AI & RAG system...',
             textAlign: TextAlign.center,
-            style: TextStyle(color: Colors.white70, fontSize: 14),
+            style: TextStyle(color: _mutedText, fontSize: 14),
           ),
         ],
       ).animate().fadeIn(duration: 400.ms),
@@ -207,7 +291,7 @@ class _MockInterviewScreenState extends State<MockInterviewScreen> {
               Text(
                 vm.error!,
                 textAlign: TextAlign.center,
-                style: const TextStyle(color: Colors.white, fontSize: 14),
+                style: TextStyle(color: _textColor, fontSize: 14),
               ),
               const SizedBox(height: 24),
               ElevatedButton(
@@ -283,17 +367,49 @@ class _MockInterviewScreenState extends State<MockInterviewScreen> {
               onSkip: () => vm.skipQuestion(),
               onRetry: () => vm.retryListening(),
             ).animate().fadeIn(duration: 400.ms),
+            const Gap(16),
+            
+            // Countdown Timer Badge
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+              decoration: BoxDecoration(
+                color: (vm.remainingSeconds <= 5 ? Colors.redAccent : _textColor).withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(
+                  color: (vm.remainingSeconds <= 5 ? Colors.redAccent : const Color(0xFF4F46E5)).withValues(alpha: 0.3),
+                ),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    Icons.timer_outlined,
+                    size: 18,
+                    color: vm.remainingSeconds <= 5 ? Colors.redAccent : const Color(0xFF4F46E5),
+                  ),
+                  const Gap(8),
+                  Text(
+                    'Time remaining: ${vm.remainingSeconds}s',
+                    style: TextStyle(
+                      color: vm.remainingSeconds <= 5 ? Colors.redAccent : _textColor,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14,
+                    ),
+                  ),
+                ],
+              ),
+            ).animate(target: vm.remainingSeconds <= 5 ? 1 : 0).shake(hz: 4, curve: Curves.easeInOut),
             const Gap(8),
           ],
 
           // Evaluating spinner
           if (vm.isEvaluating)
-            const Padding(
-              padding: EdgeInsets.all(20),
+            Padding(
+              padding: const EdgeInsets.all(20),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  SizedBox(
+                  const SizedBox(
                     width: 18,
                     height: 18,
                     child: CircularProgressIndicator(
@@ -301,8 +417,8 @@ class _MockInterviewScreenState extends State<MockInterviewScreen> {
                       strokeWidth: 2,
                     ),
                   ),
-                  Gap(12),
-                  Text('Evaluating your answer...', style: TextStyle(color: Colors.white54)),
+                  const Gap(12),
+                  Text('Evaluating your answer...', style: TextStyle(color: _mutedText)),
                 ],
               ),
             ),
@@ -323,7 +439,7 @@ class _MockInterviewScreenState extends State<MockInterviewScreen> {
         child: LinearProgressIndicator(
           value: progress,
           minHeight: 4,
-          backgroundColor: Colors.white12,
+          backgroundColor: _cardBorder,
           valueColor: const AlwaysStoppedAnimation(Color(0xFF4F46E5)),
         ),
       ),
@@ -400,6 +516,33 @@ class _MockInterviewScreenState extends State<MockInterviewScreen> {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  void _confirmEndInterview(MockInterviewViewModel vm) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: const Color(0xFF1E293B),
+        title: const Text('End Interview?', style: TextStyle(color: Colors.white)),
+        content: const Text(
+          'Are you sure you want to end the interview now? You will see results for the questions you have completed.',
+          style: TextStyle(color: Colors.white70),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Continue Interview'),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(ctx);
+              vm.endInterview();
+            },
+            child: const Text('End Now', style: TextStyle(color: Colors.redAccent)),
+          ),
+        ],
       ),
     );
   }

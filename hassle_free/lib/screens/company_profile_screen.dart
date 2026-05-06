@@ -4,13 +4,19 @@ import '../services/auth_service.dart';
 import 'login_screen.dart';
 
 class CompanyProfileScreen extends StatefulWidget {
-  const CompanyProfileScreen({super.key});
+  final bool isDarkMode;
+  const CompanyProfileScreen({super.key, this.isDarkMode = true});
 
   @override
   State<CompanyProfileScreen> createState() => _CompanyProfileScreenState();
 }
 
 class _CompanyProfileScreenState extends State<CompanyProfileScreen> {
+  Color get _textColor => widget.isDarkMode ? Colors.white : Colors.black87;
+  Color get _mutedText => widget.isDarkMode ? Colors.white60 : Colors.black54;
+  Color get _cardBg => widget.isDarkMode ? const Color(0xFF1E293B) : Colors.white;
+  Color get _cardBorder => widget.isDarkMode ? Colors.white.withValues(alpha: 0.1) : Colors.grey.shade300;
+  Color get _bgColor => widget.isDarkMode ? const Color(0xFF0F172A) : const Color(0xFFF1F5F9);
   final CompanyService _companyService = CompanyService();
   final _formKey = GlobalKey<FormState>();
 
@@ -86,7 +92,12 @@ class _CompanyProfileScreenState extends State<CompanyProfileScreen> {
         }
 
         return SingleChildScrollView(
-          padding: EdgeInsets.all(isMobile ? 16 : 32),
+          padding: EdgeInsets.fromLTRB(
+            isMobile ? 16 : 32,
+            isMobile ? 12 : 8, // Reduced top padding
+            isMobile ? 16 : 32,
+            isMobile ? 16 : 32,
+          ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -111,17 +122,17 @@ class _CompanyProfileScreenState extends State<CompanyProfileScreen> {
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
+                Text(
                   'Company Profile',
                   style: TextStyle(
                       fontSize: 28,
                       fontWeight: FontWeight.bold,
-                      color: Colors.white,
+                      color: _textColor,
                       letterSpacing: -1),
                 ),
                 Text(
                   'Manage your company details and branding',
-                  style: TextStyle(color: Colors.white.withValues(alpha: 0.5)),
+                  style: TextStyle(color: _mutedText),
                 ),
               ],
             ),
@@ -147,7 +158,7 @@ class _CompanyProfileScreenState extends State<CompanyProfileScreen> {
                 width: 16,
                 height: 16,
                 child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-            : Icon(_isEditing ? Icons.save : Icons.edit, color: Colors.white, size: 20),
+            : const Icon(Icons.edit, color: Colors.white, size: 20),
         label: Text(_isEditing ? 'Save Profile' : 'Edit Profile',
             style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
         style: ElevatedButton.styleFrom(
@@ -200,9 +211,9 @@ class _CompanyProfileScreenState extends State<CompanyProfileScreen> {
           Container(
             width: double.infinity,
             decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.05),
+              color: _cardBg,
               borderRadius: BorderRadius.circular(24),
-              border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
+              border: Border.all(color: _cardBorder),
             ),
             child: Column(
               children: [
@@ -233,12 +244,12 @@ class _CompanyProfileScreenState extends State<CompanyProfileScreen> {
                             if (_isEditing)
                               _buildInlineTextField(_nameController, 'Company Name', Icons.business)
                             else
-                              Text(profile['name'] ?? 'Add Company Name', style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.white)),
+                              Text(profile['name'] ?? 'Add Company Name', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: _textColor)),
                             const SizedBox(height: 8),
                             if (_isEditing)
                               _buildInlineTextField(_industryController, 'Industry', Icons.category_outlined)
                             else
-                              Text(profile['industry'] ?? 'Industry not set', style: TextStyle(color: Colors.white.withValues(alpha: 0.5), fontSize: 16)),
+                              Text(profile['industry'] ?? 'Industry not set', style: TextStyle(color: _mutedText, fontSize: 16)),
                           ],
                         ),
                       ),
@@ -261,7 +272,7 @@ class _CompanyProfileScreenState extends State<CompanyProfileScreen> {
                       'About Company',
                       _isEditing 
                         ? _buildMultiLineTextField(_descriptionController, 'Describe your company...')
-                        : Text(profile['about'] ?? 'No description provided.', style: const TextStyle(color: Colors.white70, height: 1.6)),
+                        : Text(profile['about'] ?? 'No description provided.', style: TextStyle(color: _textColor.withValues(alpha: 0.7), height: 1.6)),
                     ),
                   ],
                 ),
@@ -276,9 +287,9 @@ class _CompanyProfileScreenState extends State<CompanyProfileScreen> {
                         Column(
                           children: [
                             _buildInfoItem(Icons.public, 'Website', profile['website'], _websiteController),
-                            const Divider(height: 32, color: Colors.white10),
+                            Divider(height: 32, color: _textColor.withValues(alpha: 0.1)),
                             _buildInfoItem(Icons.location_on_outlined, 'Headquarters', profile['location'], _locationController),
-                            const Divider(height: 32, color: Colors.white10),
+                            Divider(height: 32, color: _textColor.withValues(alpha: 0.1)),
                             _buildInfoItem(Icons.people_outline, 'Company Size', profile['employeeCount'], _employeeCountController),
                           ],
                         ),
@@ -316,13 +327,13 @@ class _CompanyProfileScreenState extends State<CompanyProfileScreen> {
         width: 100,
         height: 100,
         decoration: BoxDecoration(
-          color: const Color(0xFF0F172A),
+          color: _bgColor,
           shape: BoxShape.circle,
           border: Border.all(color: const Color(0xFF6366F1), width: 4),
           boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.3), blurRadius: 10)],
         ),
         child: Center(
-          child: Text(initial, style: const TextStyle(fontSize: 40, fontWeight: FontWeight.bold, color: Colors.white)),
+          child: Text(initial, style: TextStyle(fontSize: 40, fontWeight: FontWeight.bold, color: _textColor)),
         ),
       ),
     );
@@ -333,14 +344,14 @@ class _CompanyProfileScreenState extends State<CompanyProfileScreen> {
       width: double.infinity,
       padding: const EdgeInsets.all(32),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.05),
+        color: _cardBg,
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
+        border: Border.all(color: _cardBorder),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(title, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white)),
+          Text(title, style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: _textColor)),
           const SizedBox(height: 24),
           content,
         ],
@@ -361,11 +372,11 @@ class _CompanyProfileScreenState extends State<CompanyProfileScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(label, style: TextStyle(color: Colors.white.withValues(alpha: 0.4), fontSize: 12)),
+              Text(label, style: TextStyle(color: _mutedText, fontSize: 12)),
               if (_isEditing)
                 _buildInlineTextField(controller, label, null)
               else
-                Text(value ?? 'Not set', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w500)),
+                Text(value ?? 'Not set', style: TextStyle(color: _textColor, fontWeight: FontWeight.w500)),
             ],
           ),
         ),
@@ -376,7 +387,7 @@ class _CompanyProfileScreenState extends State<CompanyProfileScreen> {
   Widget _buildInlineTextField(TextEditingController controller, String hint, IconData? icon) {
     return TextFormField(
       controller: controller,
-      style: const TextStyle(color: Colors.white),
+      style: TextStyle(color: _textColor),
       decoration: InputDecoration(
         hintText: hint,
         hintStyle: TextStyle(color: Colors.white24),
@@ -393,7 +404,7 @@ class _CompanyProfileScreenState extends State<CompanyProfileScreen> {
     return TextFormField(
       controller: controller,
       maxLines: 5,
-      style: const TextStyle(color: Colors.white),
+      style: TextStyle(color: _textColor),
       decoration: InputDecoration(
         hintText: hint,
         hintStyle: const TextStyle(color: Colors.white24),

@@ -44,4 +44,20 @@ class InterviewResult {
           : DateTime.now(),
     );
   }
+
+  Map<String, dynamic> toMap() {
+    return {
+      'questionId': questionId,
+      'questionText': questionText,
+      'userAnswer': userAnswer,
+      'idealAnswer': idealAnswer,
+      'score': score,
+      'matchedPhrases': matchedPhrases,
+      'missedPhrases': missedPhrases,
+      'feedback': feedback,
+      'encouragement': encouragement,
+      'passed': passed,
+      'answeredAt': answeredAt.millisecondsSinceEpoch,
+    };
+  }
 }

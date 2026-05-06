@@ -3,9 +3,40 @@ import '../services/job_service.dart';
 import '../widgets/resume_thematic_viewer.dart';
 import '../widgets/candidate_avatar.dart';
 import 'post_job_screen.dart';
+import '../widgets/hoverable_card.dart';
+import '../utils/pdf_generator.dart';
+import '../features/mock_interview/screens/interview_results_screen.dart';
+import '../features/mock_interview/models/interview_session.dart';
 
-class EmployerDashboardScreen extends StatelessWidget {
-  const EmployerDashboardScreen({super.key});
+class EmployerDashboardScreen extends StatefulWidget {
+  final bool isDarkMode;
+  const EmployerDashboardScreen({super.key, this.isDarkMode = true});
+
+  @override
+  State<EmployerDashboardScreen> createState() => _EmployerDashboardScreenState();
+}
+
+class _EmployerDashboardScreenState extends State<EmployerDashboardScreen> {
+  final Set<String> _selectedApplicantIds = {};
+
+  Color get _textColor => widget.isDarkMode ? Colors.white : Colors.black87;
+  Color get _mutedText => widget.isDarkMode ? Colors.white60 : Colors.black54;
+  Color get _cardBg => widget.isDarkMode ? Colors.white.withValues(alpha: 0.05) : Colors.white;
+  Color get _cardBorder => widget.isDarkMode ? Colors.white.withValues(alpha: 0.05) : Colors.grey.shade300;
+  bool get isDarkMode => widget.isDarkMode;
+  late final JobService _jobService;
+  late final Stream<Map<String, int>> _statsStream;
+  late final Stream<List<Map<String, dynamic>>> _jobsStream;
+  late final Stream<List<Map<String, dynamic>>> _applicantsStream;
+
+  @override
+  void initState() {
+    super.initState();
+    _jobService = JobService();
+    _statsStream = _jobService.getEmployerStatsStream();
+    _jobsStream = _jobService.getEmployerJobsStream();
+    _applicantsStream = _jobService.getEmployerAllApplicantsStream();
+  }
 
   void _showPostJobDialog(BuildContext context) {
     bool isMobile = MediaQuery.of(context).size.width < 1100;
@@ -33,13 +64,14 @@ class EmployerDashboardScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     bool isMobile = MediaQuery.of(context).size.width < 1100;
-    final jobService = JobService();
 
     return SingleChildScrollView(
       physics: const BouncingScrollPhysics(),
-      padding: EdgeInsets.symmetric(
-        horizontal: isMobile ? 20 : 32,
-        vertical: isMobile ? 28 : 40,
+      padding: EdgeInsets.fromLTRB(
+        isMobile ? 20 : 32,
+        isMobile ? 16 : 8, // Reduced top padding
+        isMobile ? 20 : 32,
+        isMobile ? 28 : 40,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -50,7 +82,7 @@ class EmployerDashboardScreen extends StatelessWidget {
           const SizedBox(height: 16),
 
           StreamBuilder<Map<String, int>>(
-            stream: jobService.getEmployerStatsStream(),
+            stream: _statsStream,
             builder: (context, snapshot) {
               final stats =
                   snapshot.data ?? {'activeJobs': 0, 'totalApplicants': 0};
@@ -60,19 +92,25 @@ class EmployerDashboardScreen extends StatelessWidget {
 
           const SizedBox(height: 32),
 
-          const Text(
-            'Your Job Postings',
-            style: TextStyle(
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
-              color: Colors.white,
-              letterSpacing: -0.5,
-            ),
+          Row(
+            children: [
+              const Icon(Icons.work_outline, color: Color(0xFF6366F1), size: 28),
+              const SizedBox(width: 12),
+              Text(
+                'Your Job Postings',
+                style: TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                  color: _textColor,
+                  letterSpacing: -0.5,
+                ),
+              ),
+            ],
           ),
           const SizedBox(height: 20),
 
           StreamBuilder<List<Map<String, dynamic>>>(
-            stream: jobService.getEmployerJobsStream(),
+            stream: _jobsStream,
             builder: (context, snapshot) {
               if (snapshot.connectionState == ConnectionState.waiting) {
                 return const Center(
@@ -85,27 +123,29 @@ class EmployerDashboardScreen extends StatelessWidget {
                   style: TextStyle(color: Colors.red),
                 );
               }
-              final jobs = snapshot.data ?? [];
-              if (jobs.isEmpty) {
+              final allJobs = snapshot.data ?? [];
+              if (allJobs.isEmpty) {
                 return _buildEmptyState(context);
               }
-              return _buildJobsList(isMobile, jobs);
+              // Only show the latest job
+              final latestJob = [allJobs.first];
+              return _buildJobsList(isMobile, latestJob);
             },
           ),
 
           const SizedBox(height: 32),
-          const Text(
+          Text(
             'Your Top Applicants',
             style: TextStyle(
               fontSize: 24,
               fontWeight: FontWeight.bold,
-              color: Colors.white,
+              color: _textColor,
               letterSpacing: -0.5,
             ),
           ),
           const SizedBox(height: 20),
           StreamBuilder<List<Map<String, dynamic>>>(
-            stream: jobService.getEmployerJobsStream(),
+            stream: _jobsStream,
             builder: (context, jobSnapshot) {
               final jobs = jobSnapshot.data ?? [];
               final List<String> employerSkills = jobs
@@ -114,7 +154,7 @@ class EmployerDashboardScreen extends StatelessWidget {
                   .toList();
 
               return StreamBuilder<List<Map<String, dynamic>>>(
-                stream: jobService.getEmployerAllApplicantsStream(),
+                stream: _applicantsStream,
                 builder: (context, applicantSnapshot) {
                   final allApplicants = applicantSnapshot.data ?? [];
 
@@ -162,13 +202,14 @@ class EmployerDashboardScreen extends StatelessWidget {
                     return Container(
                       padding: const EdgeInsets.all(40),
                       decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.05),
+                        color: _cardBg,
                         borderRadius: BorderRadius.circular(24),
+                        border: Border.all(color: _cardBorder),
                       ),
-                      child: const Center(
+                      child: Center(
                         child: Text(
                           'No applicants yet',
-                          style: TextStyle(color: Colors.white60),
+                          style: TextStyle(color: _mutedText),
                         ),
                       ),
                     );
@@ -192,16 +233,16 @@ class EmployerDashboardScreen extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.all(40),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.05),
+        color: _cardBg,
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
+        border: Border.all(color: _cardBorder),
       ),
       child: Column(
         children: [
           Icon(
             Icons.business_center_outlined,
             size: 64,
-            color: Colors.white.withValues(alpha: 0.2),
+            color: _mutedText.withValues(alpha: 0.5),
           ),
           const SizedBox(height: 16),
           Text(
@@ -209,13 +250,13 @@ class EmployerDashboardScreen extends StatelessWidget {
             style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.bold,
-              color: Colors.white.withValues(alpha: 0.8),
+              color: _textColor,
             ),
           ),
           const SizedBox(height: 8),
           Text(
             'Post your first job to start receiving candidates',
-            style: TextStyle(color: Colors.white.withValues(alpha: 0.5)),
+            style: TextStyle(color: _mutedText),
           ),
         ],
       ),
@@ -231,14 +272,16 @@ class EmployerDashboardScreen extends StatelessWidget {
         final job = jobs[index];
         final skills = List<String>.from(job['requiredSkills'] ?? []);
 
-        return Container(
-          margin: const EdgeInsets.only(bottom: 16),
-          padding: const EdgeInsets.all(24),
-          decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.05),
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
-          ),
+        return HoverableCard(
+          child: Container(
+            margin: const EdgeInsets.only(bottom: 16),
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              color: _cardBg,
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: _cardBorder),
+              boxShadow: isDarkMode ? null : [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 10)],
+            ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -250,19 +293,18 @@ class EmployerDashboardScreen extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          job['title'] ?? 'Unknown Title',
-                          style: const TextStyle(
+                          job['title'] ?? 'Job Title',
+                          style: TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
-                            color: Colors.white,
+                            color: _textColor,
                           ),
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          '${job['type']} • ${job['location']} • ${job['experienceLevel']}',
+                          '${job['location'] ?? 'Remote'} • ${job['type'] ?? 'Full-time'}',
                           style: TextStyle(
-                            color: Colors.white.withValues(alpha: 0.6),
-                            fontSize: 14,
+                            color: _mutedText,
                           ),
                         ),
                       ],
@@ -298,7 +340,7 @@ class EmployerDashboardScreen extends StatelessWidget {
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(
-                  color: Colors.white.withValues(alpha: 0.8),
+                  color: _textColor.withValues(alpha: 0.8),
                   fontSize: 14,
                 ),
               ),
@@ -315,14 +357,14 @@ class EmployerDashboardScreen extends StatelessWidget {
                             vertical: 4,
                           ),
                           decoration: BoxDecoration(
-                            color: Colors.white.withValues(alpha: 0.1),
+                            color: isDarkMode ? Colors.white.withValues(alpha: 0.1) : Colors.black.withValues(alpha: 0.05),
                             borderRadius: BorderRadius.circular(8),
                           ),
                           child: Text(
                             s,
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 12,
-                              color: Colors.white70,
+                              color: _mutedText,
                             ),
                           ),
                         ),
@@ -331,7 +373,7 @@ class EmployerDashboardScreen extends StatelessWidget {
                     Text(
                       '+${skills.length - 3} more',
                       style: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.5),
+                        color: _mutedText,
                         fontSize: 12,
                       ),
                     ),
@@ -347,35 +389,36 @@ class EmployerDashboardScreen extends StatelessWidget {
               ),
             ],
           ),
-        );
-      },
-    );
-  }
+        ),
+      );
+    },
+  );
+}
 
   Widget _buildHeader(BuildContext context, bool isMobile) {
     if (isMobile) {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             'Recruitment Overview',
             style: TextStyle(
               fontSize: 28,
               fontWeight: FontWeight.bold,
-              color: Colors.white,
+              color: _textColor,
               letterSpacing: -1,
             ),
           ),
           Text(
             'Manage your job postings and top talent',
-            style: TextStyle(color: Colors.white.withValues(alpha: 0.5)),
+            style: TextStyle(color: _mutedText),
           ),
           const SizedBox(height: 16),
           SizedBox(
             width: double.infinity,
             child: ElevatedButton.icon(
               onPressed: () => _showPostJobDialog(context),
-              icon: const Icon(Icons.add, color: Colors.white, size: 20),
+              icon: const Icon(Icons.post_add, color: Colors.white, size: 20),
               label: const Text(
                 'Post a New Job',
                 style: TextStyle(
@@ -404,25 +447,25 @@ class EmployerDashboardScreen extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
+              Text(
                 'Recruitment Overview',
                 style: TextStyle(
                   fontSize: 28,
                   fontWeight: FontWeight.bold,
-                  color: Colors.white,
+                  color: _textColor,
                   letterSpacing: -1,
                 ),
               ),
               Text(
                 'Manage your job postings and top talent',
-                style: TextStyle(color: Colors.white.withValues(alpha: 0.5)),
+                style: TextStyle(color: _mutedText),
               ),
             ],
           ),
         ),
         ElevatedButton.icon(
           onPressed: () => _showPostJobDialog(context),
-          icon: const Icon(Icons.add, color: Colors.white, size: 20),
+          icon: const Icon(Icons.post_add, color: Colors.white, size: 20),
           label: const Text(
             'Post a New Job',
             style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
@@ -443,10 +486,10 @@ class EmployerDashboardScreen extends StatelessWidget {
   Widget _buildSectionHeader(String title) {
     return Text(
       title,
-      style: const TextStyle(
+      style: TextStyle(
         fontSize: 24,
         fontWeight: FontWeight.bold,
-        color: Colors.white,
+        color: _textColor,
         letterSpacing: -0.5,
       ),
     );
@@ -544,73 +587,137 @@ class EmployerDashboardScreen extends StatelessWidget {
     bool isBarChart = false,
   }) {
     return Expanded(
-      child: Container(
-        height: 160,
-        decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.05),
-          borderRadius: BorderRadius.circular(24),
-          border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
-        ),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(24),
-          child: Stack(
-            children: [
-              // Background Graphical Element
-              Positioned(
-                bottom: -10,
-                left: 0,
-                right: 0,
-                height: 80,
-                child: CustomPaint(
-                  painter: isBarChart
-                      ? _BarChartPainter(dataPoints, color.withValues(alpha: 0.2))
-                      : _MiniChartPainter(dataPoints, color.withValues(alpha: 0.3)),
+      child: HoverableCard(
+        child: Container(
+          height: 160,
+          decoration: BoxDecoration(
+            color: _cardBg,
+            borderRadius: BorderRadius.circular(24),
+            border: Border.all(color: _cardBorder),
+            boxShadow: isDarkMode ? null : [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 10)],
+          ),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(24),
+            child: Stack(
+              children: [
+                // Background Graphical Element
+                Positioned(
+                  bottom: -10,
+                  left: 0,
+                  right: 0,
+                  height: 80,
+                  child: CustomPaint(
+                    painter: isBarChart
+                        ? _BarChartPainter(dataPoints, color.withValues(alpha: 0.2))
+                        : _MiniChartPainter(dataPoints, color.withValues(alpha: 0.3)),
+                  ),
                 ),
-              ),
-              Padding(
-                padding: const EdgeInsets.all(24),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.all(10),
-                          decoration: BoxDecoration(
-                            color: color.withValues(alpha: 0.1),
-                            borderRadius: BorderRadius.circular(12),
+                Padding(
+                  padding: const EdgeInsets.all(24),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(10),
+                            decoration: BoxDecoration(
+                              color: color.withValues(alpha: 0.1),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Icon(icon, color: color, size: 20),
                           ),
-                          child: Icon(icon, color: color, size: 20),
+                          Icon(Icons.trending_up, color: color.withValues(alpha: 0.5), size: 16),
+                        ],
+                      ),
+                      const Spacer(),
+                      Text(
+                        value,
+                        style: TextStyle(
+                          fontSize: 32,
+                          fontWeight: FontWeight.bold,
+                          color: _textColor,
+                          letterSpacing: -1,
                         ),
-                        Icon(Icons.trending_up, color: color.withValues(alpha: 0.5), size: 16),
-                      ],
-                    ),
-                    const Spacer(),
-                    Text(
-                      value,
-                      style: const TextStyle(
-                        fontSize: 32,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                        letterSpacing: -1,
                       ),
-                    ),
-                    Text(
-                      title.toUpperCase(),
-                      style: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.4),
-                        fontSize: 11,
-                        fontWeight: FontWeight.bold,
-                        letterSpacing: 1,
+                      Text(
+                        title.toUpperCase(),
+                        style: TextStyle(
+                          color: _mutedText,
+                          fontSize: 11,
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: 1,
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildBulkActions(List<Map<String, dynamic>> candidates) {
+    bool allSelected = candidates.isNotEmpty &&
+        candidates.every((c) => _selectedApplicantIds.contains(c['seekerId']));
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      decoration: BoxDecoration(
+        color: _cardBg,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: _cardBorder),
+      ),
+      child: Row(
+        children: [
+          Checkbox(
+            value: allSelected,
+            activeColor: const Color(0xFF6366F1),
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
+            onChanged: (val) {
+              setState(() {
+                if (val == true) {
+                  _selectedApplicantIds.addAll(
+                    candidates.map((c) => c['seekerId'] as String),
+                  );
+                } else {
+                  _selectedApplicantIds.clear();
+                }
+              });
+            },
+          ),
+          Text(
+            'Select All Applicants',
+            style: TextStyle(
+              color: _textColor,
+              fontWeight: FontWeight.bold,
+              fontSize: 14,
+            ),
+          ),
+          const Spacer(),
+          if (_selectedApplicantIds.isNotEmpty)
+            ElevatedButton.icon(
+            onPressed: () => _handleBulkDownload(candidates),
+              icon: const Icon(Icons.download_for_offline, size: 18),
+              label: Text('Download (${_selectedApplicantIds.length})'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF6366F1),
+                foregroundColor: Colors.white,
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                elevation: 0,
+              ),
+            ),
+        ],
       ),
     );
   }
@@ -622,30 +729,56 @@ class EmployerDashboardScreen extends StatelessWidget {
   ) {
     if (isMobile) {
       return Column(
-        children: candidates.take(5).map((c) {
-          final skills = List<String>.from(c['skills'] ?? []);
-          final score = '${c['matchScore']}%';
-          final name = c['name'] ?? 'Candidate';
-          final role = c['jobTitle'] ?? 'N/A';
-          return Container(
-            margin: const EdgeInsets.only(bottom: 14),
-            padding: const EdgeInsets.all(18),
-            decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.07),
-              borderRadius: BorderRadius.circular(18),
-              border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
+        children: [
+          _buildBulkActions(candidates),
+          ...candidates.take(5).map((c) {
+            final skills = List<String>.from(c['skills'] ?? []);
+            final score = '${c['matchScore']}%';
+            final name = c['name'] ?? 'Candidate';
+            final role = c['jobTitle'] ?? 'N/A';
+            final isSelected = _selectedApplicantIds.contains(c['seekerId']);
+
+            return HoverableCard(
+              child: Container(
+                margin: const EdgeInsets.only(bottom: 14),
+                padding: const EdgeInsets.all(18),
+                decoration: BoxDecoration(
+                  color: _cardBg,
+                  borderRadius: BorderRadius.circular(18),
+                  border: Border.all(
+                    color: isSelected
+                        ? const Color(0xFF6366F1).withValues(alpha: 0.5)
+                        : _cardBorder,
+                    width: isSelected ? 2 : 1,
+                  ),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    CandidateAvatar(
-                      seekerId: c['seekerId'] ?? '',
-                      seekerName: name,
-                      radius: 20,
-                      initialPictureUrl: c['profilePictureUrl'],
-                    ),
+                    Row(
+                      children: [
+                        Checkbox(
+                          value: isSelected,
+                          activeColor: const Color(0xFF6366F1),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          onChanged: (val) {
+                            setState(() {
+                              if (val == true) {
+                                _selectedApplicantIds.add(c['seekerId']);
+                              } else {
+                                _selectedApplicantIds.remove(c['seekerId']);
+                              }
+                            });
+                          },
+                        ),
+                        CandidateAvatar(
+                          seekerId: c['seekerId'] ?? '',
+                          seekerName: name,
+                          radius: 20,
+                          initialPictureUrl: c['profilePictureUrl'],
+                        ),
                     const SizedBox(width: 12),
                     Expanded(
                       child: Column(
@@ -653,16 +786,16 @@ class EmployerDashboardScreen extends StatelessWidget {
                         children: [
                           Text(
                             name,
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontWeight: FontWeight.bold,
-                              color: Colors.white,
+                              color: _textColor,
                               fontSize: 16,
                             ),
                           ),
                           Text(
                             'Applied for: $role',
                             style: TextStyle(
-                              color: Colors.white.withValues(alpha: 0.6),
+                              color: _mutedText,
                               fontSize: 13,
                             ),
                           ),
@@ -702,14 +835,14 @@ class EmployerDashboardScreen extends StatelessWidget {
                             vertical: 4,
                           ),
                           decoration: BoxDecoration(
-                            color: Colors.white.withValues(alpha: 0.1),
+                            color: isDarkMode ? Colors.white.withValues(alpha: 0.1) : Colors.black.withValues(alpha: 0.05),
                             borderRadius: BorderRadius.circular(8),
                           ),
                           child: Text(
                             s,
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 12,
-                              color: Colors.white70,
+                              color: _mutedText,
                             ),
                           ),
                         ),
@@ -717,97 +850,134 @@ class EmployerDashboardScreen extends StatelessWidget {
                       .toList(),
                 ),
                 const SizedBox(height: 14),
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton(
-                    onPressed: () {
-                      final applicantFormat = {
-                        'seekerName': c['seekerName'] ?? name,
-                        'seekerEmail':
-                            c['seekerEmail'] ?? 'Contact information hidden',
-                        'resumeData': c['resumeData'] ?? {},
-                        'profilePictureUrl': c['profilePictureUrl'],
-                        'seekerId': c['seekerId'],
-                      };
-                      showDialog(
-                        context: context,
-                        builder: (context) => ResumeThematicViewer(
-                          applicant: applicantFormat,
-                          theme: 'Modern',
-                          primaryColor: const Color(0xFF6366F1),
+                Row(
+                  children: [
+                    Expanded(
+                      child: ElevatedButton(
+                        onPressed: () {
+                          final applicantFormat = {
+                            'seekerName': c['seekerName'] ?? name,
+                            'seekerEmail':
+                                c['seekerEmail'] ?? 'Contact information hidden',
+                            'resumeData': c['resumeData'] ?? {},
+                            'profilePictureUrl': c['profilePictureUrl'],
+                            'seekerId': c['seekerId'],
+                          };
+                          showDialog(
+                            context: context,
+                            builder: (context) => ResumeThematicViewer(
+                              applicant: applicantFormat,
+                              theme: 'Modern',
+                              primaryColor: const Color(0xFF6366F1),
+                            ),
+                          );
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(
+                            0xFF6366F1,
+                          ).withValues(alpha: 0.2),
+                          foregroundColor: const Color(0xFF818CF8),
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          elevation: 0,
                         ),
-                      );
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(
-                        0xFF6366F1,
-                      ).withValues(alpha: 0.2),
-                      foregroundColor: const Color(0xFF818CF8),
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                      shape: RoundedRectangleBorder(
+                        child: const Text(
+                          'View Profile',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 15,
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Container(
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF6366F1).withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(12),
                       ),
-                      elevation: 0,
-                    ),
-                    child: const Text(
-                      'View Profile',
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 15,
+                      child: IconButton(
+                        onPressed: () => _handleDownload(c),
+                        icon: const Icon(Icons.download_rounded, color: Color(0xFF818CF8)),
+                        tooltip: 'Download Resume',
                       ),
                     ),
-                  ),
+                    if (c['hasInterview'] == true) ...[
+                      const SizedBox(width: 8),
+                      Container(
+                        decoration: BoxDecoration(
+                          color: Colors.green.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: IconButton(
+                          onPressed: () => _showInterviewResults(context, c),
+                          icon: const Icon(Icons.video_call_rounded, color: Colors.green),
+                          tooltip: 'View Interview Results',
+                        ),
+                      ),
+                    ],
+                  ],
                 ),
               ],
             ),
+          ),
           );
-        }).toList(),
-      );
-    }
+        }),
+      ],
+    );
+  }
 
     // Web – full DataTable
-    return Container(
-      width: double.infinity,
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.05),
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
-      ),
-      child: LayoutBuilder(
-        builder: (context, constraints) {
-          return SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: ConstrainedBox(
-              constraints: BoxConstraints(minWidth: constraints.maxWidth),
-              child: DataTable(
-                columnSpacing: 40,
-                horizontalMargin: 24,
-                headingRowHeight: 64,
-                dataRowMinHeight: 76,
-                dataRowMaxHeight: 76,
-                columns: [
-                  _buildTableHeader('Candidate Name'),
-                  _buildTableHeader('Applied For'),
-                  _buildTableHeader('Skills'),
-                  _buildTableHeader('Match'),
-                  _buildTableHeader('Action'),
-                ],
-                rows: candidates.take(5).map((c) {
-                  final skills = List<String>.from(c['skills'] ?? []);
-                  return _buildCandidateRow(
-                    context,
-                    c['name'] ?? 'Candidate',
-                    c['jobTitle'] ?? 'N/A',
-                    skills,
-                    '${c['matchScore']}%',
-                    c,
-                  );
-                }).toList(),
-              ),
-            ),
-          );
-        },
-      ),
+    return Column(
+      children: [
+        _buildBulkActions(candidates),
+        Container(
+          width: double.infinity,
+          decoration: BoxDecoration(
+            color: _cardBg,
+            borderRadius: BorderRadius.circular(24),
+            border: Border.all(color: _cardBorder),
+          ),
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              return SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(minWidth: constraints.maxWidth),
+                  child: DataTable(
+                    columnSpacing: 40,
+                    horizontalMargin: 24,
+                    headingRowHeight: 64,
+                    dataRowMinHeight: 76,
+                    dataRowMaxHeight: 76,
+                    columns: [
+                      _buildTableHeader('Select'),
+                      _buildTableHeader('Candidate Name'),
+                      _buildTableHeader('Applied For'),
+                      _buildTableHeader('Skills'),
+                      _buildTableHeader('Match'),
+                      _buildTableHeader('Action'),
+                    ],
+                    rows: candidates.take(5).map((c) {
+                      final skills = List<String>.from(c['skills'] ?? []);
+                      return _buildCandidateRow(
+                        context,
+                        c['name'] ?? 'Candidate',
+                        c['jobTitle'] ?? 'N/A',
+                        skills,
+                        '${c['matchScore']}%',
+                        c,
+                      );
+                    }).toList(),
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
+      ],
     );
   }
 
@@ -816,7 +986,7 @@ class EmployerDashboardScreen extends StatelessWidget {
       label: Text(
         label,
         style: TextStyle(
-          color: Colors.white.withValues(alpha: 0.6),
+          color: _mutedText,
           fontWeight: FontWeight.w600,
           fontSize: 15,
         ),
@@ -832,8 +1002,27 @@ class EmployerDashboardScreen extends StatelessWidget {
     String score,
     Map<String, dynamic> candidate,
   ) {
+    final isSelected = _selectedApplicantIds.contains(candidate['seekerId']);
     return DataRow(
+      selected: isSelected,
       cells: [
+        DataCell(
+          Checkbox(
+            value: isSelected,
+            activeColor: const Color(0xFF6366F1),
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
+            onChanged: (val) {
+              setState(() {
+                if (val == true) {
+                  _selectedApplicantIds.add(candidate['seekerId']);
+                } else {
+                  _selectedApplicantIds.remove(candidate['seekerId']);
+                }
+              });
+            },
+          ),
+        ),
         DataCell(
           Row(
             children: [
@@ -846,9 +1035,9 @@ class EmployerDashboardScreen extends StatelessWidget {
               const SizedBox(width: 14),
               Text(
                 name,
-                style: const TextStyle(
+                style: TextStyle(
                   fontWeight: FontWeight.bold,
-                  color: Colors.white,
+                  color: _textColor,
                   fontSize: 16,
                 ),
               ),
@@ -859,7 +1048,7 @@ class EmployerDashboardScreen extends StatelessWidget {
           Text(
             role,
             style: TextStyle(
-              color: Colors.white.withValues(alpha: 0.8),
+              color: _textColor.withValues(alpha: 0.8),
               fontSize: 15,
             ),
           ),
@@ -876,14 +1065,14 @@ class EmployerDashboardScreen extends StatelessWidget {
                       vertical: 4,
                     ),
                     decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.1),
+                      color: isDarkMode ? Colors.white.withValues(alpha: 0.1) : Colors.black.withValues(alpha: 0.05),
                       borderRadius: BorderRadius.circular(6),
                     ),
                     child: Text(
                       s,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 11,
-                        color: Colors.white70,
+                        color: _mutedText,
                       ),
                     ),
                   ),
@@ -908,38 +1097,159 @@ class EmployerDashboardScreen extends StatelessWidget {
           ),
         ),
         DataCell(
-          TextButton(
-            onPressed: () {
-              // Correctly pass the nested resumeData instead of the entire document as resumeData
-              final applicantFormat = {
-                'seekerName': candidate['seekerName'] ?? name,
-                'seekerEmail':
-                    candidate['seekerEmail'] ?? 'Contact information hidden',
-                'resumeData': candidate['resumeData'] ?? {},
-                'profilePictureUrl': candidate['profilePictureUrl'],
-                'seekerId': candidate['seekerId'],
-              };
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextButton(
+                onPressed: () {
+                  // Correctly pass the nested resumeData instead of the entire document as resumeData
+                  final applicantFormat = {
+                    'seekerName': candidate['seekerName'] ?? name,
+                    'seekerEmail':
+                        candidate['seekerEmail'] ?? 'Contact information hidden',
+                    'resumeData': candidate['resumeData'] ?? {},
+                    'profilePictureUrl': candidate['profilePictureUrl'],
+                    'seekerId': candidate['seekerId'],
+                  };
 
-              showDialog(
-                context: context,
-                builder: (context) => ResumeThematicViewer(
-                  applicant: applicantFormat,
-                  theme: 'Modern',
-                  primaryColor: const Color(0xFF6366F1),
+                  showDialog(
+                    context: context,
+                    builder: (context) => ResumeThematicViewer(
+                      applicant: applicantFormat,
+                      theme: 'Modern',
+                      primaryColor: const Color(0xFF6366F1),
+                    ),
+                  );
+                },
+                child: const Text(
+                  'View Profile',
+                  style: TextStyle(
+                    color: Color(0xFF818CF8),
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
-              );
-            },
-            child: const Text(
-              'View Profile',
-              style: TextStyle(
-                color: Color(0xFF818CF8),
-                fontWeight: FontWeight.bold,
               ),
-            ),
+              if (candidate['hasInterview'] == true) ...[
+                const SizedBox(width: 8),
+                IconButton(
+                  onPressed: () => _showInterviewResults(context, candidate),
+                  icon: const Icon(Icons.video_call_rounded, color: Colors.green, size: 22),
+                  tooltip: 'View Interview Results',
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(),
+                ),
+              ],
+              const SizedBox(width: 8),
+              IconButton(
+                onPressed: () => _handleDownload(candidate),
+                icon: const Icon(Icons.download_rounded, color: Color(0xFF818CF8), size: 20),
+                tooltip: 'Download Resume',
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(),
+              ),
+            ],
           ),
         ),
       ],
     );
+  }
+
+  void _handleDownload(Map<String, dynamic> candidate) async {
+    final name = candidate['name'] ?? 'Candidate';
+    
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            const SizedBox(
+              width: 20,
+              height: 20,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+              ),
+            ),
+            const SizedBox(width: 16),
+            Text('Generating PDF for $name...'),
+          ],
+        ),
+        backgroundColor: const Color(0xFF6366F1),
+        duration: const Duration(seconds: 1),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+
+    try {
+      await PdfGenerator.generateAndDownloadResume(
+        name: name,
+        jobTitle: candidate['jobTitle'] ?? 'N/A',
+        email: candidate['seekerEmail'] ?? 'N/A',
+        resumeData: candidate['resumeData'] ?? {},
+        seekerId: candidate['seekerId'],
+      );
+    } catch (e) {
+      debugPrint('PDF generation error: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Failed to generate PDF. Please restart the app.')),
+        );
+      }
+    }
+  }
+
+  void _handleBulkDownload(List<Map<String, dynamic>> candidates) async {
+    final selectedCandidates = candidates.where((c) => _selectedApplicantIds.contains(c['seekerId'])).toList();
+    
+    if (selectedCandidates.isEmpty) return;
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Preparing ${selectedCandidates.length} resumes...'),
+        backgroundColor: const Color(0xFF6366F1),
+        duration: const Duration(seconds: 2),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+
+    try {
+      await PdfGenerator.generateBulkResumes(selectedCandidates);
+    } catch (e) {
+      debugPrint('Bulk PDF error: $e');
+    }
+
+    if (mounted) {
+      setState(() {
+        _selectedApplicantIds.clear();
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Bulk download complete'),
+          backgroundColor: Colors.green,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    }
+  }
+
+  void _showInterviewResults(BuildContext context, Map<String, dynamic> candidate) {
+    if (candidate['interviewResult'] == null) return;
+
+    try {
+      final session = InterviewSession.fromMap(candidate['interviewResult']);
+      Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (_) => InterviewResultsScreen(
+            session: session,
+            onExit: () => Navigator.of(context).pop(),
+          ),
+        ),
+      );
+    } catch (e) {
+      debugPrint('Error loading interview results: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Failed to load interview results.')),
+      );
+    }
   }
 }
 

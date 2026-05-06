@@ -6,13 +6,21 @@ import '../services/resume_service.dart';
 
 class ResumeScreen extends StatefulWidget {
   final Function(String)? onNameExtracted;
-  const ResumeScreen({super.key, this.onNameExtracted});
+  final bool isDarkMode;
+  const ResumeScreen({super.key, this.onNameExtracted, this.isDarkMode = true});
 
   @override
   State<ResumeScreen> createState() => _ResumeScreenState();
 }
 
 class _ResumeScreenState extends State<ResumeScreen> {
+  Color get _bgColor => widget.isDarkMode ? const Color(0xFF0F172A) : const Color(0xFFF8FAFC);
+  Color get _textColor => widget.isDarkMode ? Colors.white : Colors.black87;
+  Color get _cardBg => widget.isDarkMode ? const Color(0xFF1E293B) : Colors.white;
+  Color get _cardBorder => widget.isDarkMode ? Colors.white.withValues(alpha: 0.1) : Colors.grey.shade300;
+  Color get _mutedText => widget.isDarkMode ? Colors.white70 : Colors.black54;
+  Color get _iconColor => widget.isDarkMode ? Colors.blueAccent : const Color(0xFF0EA5E9);
+
   bool _isUploading = false;
   bool _isAnalyzed = false;
   double _uploadProgress = 0.0;
@@ -131,7 +139,7 @@ class _ResumeScreenState extends State<ResumeScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF0F172A),
+      backgroundColor: _bgColor,
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(24),
         child: Column(
@@ -207,7 +215,7 @@ class _ResumeScreenState extends State<ResumeScreen> {
             ),
           ),
           const SizedBox(height: 12),
-          const Text(
+          Text(
             'Let AI extract and visualize your professional profile',
             style: TextStyle(color: Colors.white70, fontSize: 16),
           ),
@@ -221,23 +229,24 @@ class _ResumeScreenState extends State<ResumeScreen> {
       width: double.infinity,
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: const Color(0xFF1E293B),
+        color: _cardBg,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
+        border: Border.all(color: _cardBorder),
+        boxShadow: widget.isDarkMode ? null : [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 10)],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              Icon(icon, color: Colors.blueAccent, size: 24),
+              Icon(icon, color: _iconColor, size: 24),
               const SizedBox(width: 12),
               Text(
                 title,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.bold,
-                  color: Colors.white,
+                  color: _textColor,
                 ),
               ),
             ],
@@ -252,9 +261,9 @@ class _ResumeScreenState extends State<ResumeScreen> {
   List<Widget> _formatContent(String content) {
     if (content.isEmpty || content.contains("No history found")) {
       return [
-        const Text(
+        Text(
           "No profile data found.",
-          style: TextStyle(color: Colors.white38),
+          style: TextStyle(color: _mutedText),
         ),
       ];
     }
@@ -284,8 +293,8 @@ class _ResumeScreenState extends State<ResumeScreen> {
               Expanded(
                 child: Text(
                   titleStr,
-                  style: const TextStyle(
-                    color: Colors.white,
+                  style: TextStyle(
+                    color: _textColor,
                     fontWeight: FontWeight.bold,
                     fontSize: 15,
                   ),
@@ -293,7 +302,7 @@ class _ResumeScreenState extends State<ResumeScreen> {
               ),
               Text(
                 dateStr,
-                style: const TextStyle(color: Colors.white70, fontSize: 13),
+                style: TextStyle(color: _mutedText, fontSize: 13),
               ),
             ],
           ),
@@ -311,8 +320,8 @@ class _ResumeScreenState extends State<ResumeScreen> {
           cleanLine,
           style: TextStyle(
             color: cleanLine.contains("Learned & Achieved")
-                ? Colors.white
-                : Colors.white70,
+                ? _textColor
+                : _mutedText,
             fontSize: 14,
             height: 1.4,
             fontWeight: cleanLine.contains("Learned & Achieved")
@@ -328,19 +337,20 @@ class _ResumeScreenState extends State<ResumeScreen> {
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: const Color(0xFF1E293B),
+        color: _cardBg,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
+        border: Border.all(color: _cardBorder),
+        boxShadow: widget.isDarkMode ? null : [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 10)],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             'Candidate Overview',
             style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.bold,
-              color: Colors.white,
+              color: _textColor,
             ),
           ),
           const SizedBox(height: 24),
@@ -348,12 +358,12 @@ class _ResumeScreenState extends State<ResumeScreen> {
           const SizedBox(height: 12),
           _buildInfoRow(Icons.category, "Role:", _category),
           const SizedBox(height: 32),
-          const Text(
+          Text(
             'Technical Skills',
             style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.bold,
-              color: Colors.white,
+              color: _textColor,
             ),
           ),
           const SizedBox(height: 16),
@@ -370,18 +380,18 @@ class _ResumeScreenState extends State<ResumeScreen> {
   Widget _buildInfoRow(IconData icon, String label, String value) {
     return Row(
       children: [
-        Icon(icon, color: Colors.white54, size: 18),
+        Icon(icon, color: _mutedText, size: 18),
         const SizedBox(width: 12),
         Text(
           label,
-          style: const TextStyle(color: Colors.white54, fontSize: 14),
+          style: TextStyle(color: _mutedText, fontSize: 14),
         ),
         const SizedBox(width: 8),
         Expanded(
           child: Text(
             value,
-            style: const TextStyle(
-              color: Colors.white,
+            style: TextStyle(
+              color: _textColor,
               fontWeight: FontWeight.bold,
               fontSize: 14,
             ),
@@ -421,19 +431,20 @@ class _ResumeScreenState extends State<ResumeScreen> {
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: const Color(0xFF1E293B),
+        color: _cardBg,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
+        border: Border.all(color: _cardBorder),
+        boxShadow: widget.isDarkMode ? null : [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 10)],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             'Upload Resume',
             style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.bold,
-              color: Colors.white,
+              color: _textColor,
             ),
           ),
           const SizedBox(height: 20),
@@ -485,13 +496,15 @@ class _ResumeScreenState extends State<ResumeScreen> {
     return Container(
       height: 200,
       decoration: BoxDecoration(
-        color: const Color(0xFF1E293B),
+        color: _cardBg,
         borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: _cardBorder),
+        boxShadow: widget.isDarkMode ? null : [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 10)],
       ),
-      child: const Center(
+      child: Center(
         child: Text(
           "Upload a resume to see analysis",
-          style: TextStyle(color: Colors.white24),
+          style: TextStyle(color: _mutedText),
         ),
       ),
     );

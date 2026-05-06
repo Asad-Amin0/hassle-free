@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'dart:ui';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'dashboard_screen.dart';
 import 'login_screen.dart';
 import '../services/auth_service.dart';
 import '../widgets/google_sign_in/google_button.dart';
+
 
 class SignUpScreen extends StatefulWidget {
   const SignUpScreen({super.key});
@@ -19,6 +21,8 @@ class _SignUpScreenState extends State<SignUpScreen> {
   final _confirmPasswordController = TextEditingController();
   bool _isLoading = false;
   bool _isJobSeeker = true;
+  bool _obscurePassword = true;
+  bool _obscureConfirmPassword = true;
   final AuthService _authService = AuthService();
 
   Future<void> _signUp() async {
@@ -70,10 +74,15 @@ class _SignUpScreenState extends State<SignUpScreen> {
       final userCredential = await _authService.signUpWithEmailPassword(
         email,
         password,
+        name: name,
       );
 
       // Update display name
       await userCredential.user?.updateDisplayName(name);
+
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool('is_job_seeker', _isJobSeeker);
+      await prefs.setInt('dashboard_index', 0);
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -107,6 +116,10 @@ class _SignUpScreenState extends State<SignUpScreen> {
       final userCredential = await _authService.signInWithGoogle();
 
       if (userCredential != null && userCredential.user != null) {
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setBool('is_job_seeker', _isJobSeeker);
+        await prefs.setInt('dashboard_index', 0);
+
         final user = userCredential.user!;
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -321,7 +334,13 @@ class _SignUpScreenState extends State<SignUpScreen> {
                                   controller: _passwordController,
                                   icon: Icons.lock_outline,
                                   placeholder: '••••••••',
-                                  obscureText: true,
+                                  obscureText: _obscurePassword,
+                                  isPassword: true,
+                                  onTogglePassword: () {
+                                    setState(() {
+                                      _obscurePassword = !_obscurePassword;
+                                    });
+                                  },
                                 ),
                                 const SizedBox(height: 20),
                                 _buildInputField(
@@ -329,7 +348,13 @@ class _SignUpScreenState extends State<SignUpScreen> {
                                   controller: _confirmPasswordController,
                                   icon: Icons.lock_outline,
                                   placeholder: '••••••••',
-                                  obscureText: true,
+                                  obscureText: _obscureConfirmPassword,
+                                  isPassword: true,
+                                  onTogglePassword: () {
+                                    setState(() {
+                                      _obscureConfirmPassword = !_obscureConfirmPassword;
+                                    });
+                                  },
                                 ),
                                 const SizedBox(height: 32),
                                 SizedBox(
@@ -446,6 +471,8 @@ class _SignUpScreenState extends State<SignUpScreen> {
     required IconData icon,
     required String placeholder,
     bool obscureText = false,
+    bool isPassword = false,
+    VoidCallback? onTogglePassword,
   }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -467,6 +494,16 @@ class _SignUpScreenState extends State<SignUpScreen> {
             hintText: placeholder,
             hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.3), fontSize: 15),
             prefixIcon: Icon(icon, color: const Color(0xFF94A3B8), size: 22),
+            suffixIcon: isPassword
+                ? IconButton(
+                    icon: Icon(
+                      obscureText ? Icons.visibility_off : Icons.visibility,
+                      color: const Color(0xFF94A3B8),
+                      size: 20,
+                    ),
+                    onPressed: onTogglePassword,
+                  )
+                : null,
             filled: true,
             fillColor: Colors.white.withValues(alpha: 0.05),
             contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),

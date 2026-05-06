@@ -30,8 +30,23 @@ class InterviewSession {
     this.completedAt,
   });
 
+  factory InterviewSession.fromMap(Map<String, dynamic> map) {
+    return InterviewSession(
+      sessionId: map['sessionId'] ?? '',
+      userId: map['userId'] ?? '',
+      jobRole: map['jobRole'] ?? '',
+      skills: List<String>.from(map['skills'] ?? []),
+      questions: [], // Questions might not be needed for results viewing
+      results: (map['results'] as List?)?.map((r) => InterviewResult.fromJson(r)).toList() ?? [],
+      totalPoints: map['totalPoints'] ?? 0,
+      startedAt: DateTime.fromMillisecondsSinceEpoch(map['startedAt'] ?? 0),
+      completedAt: map['completedAt'] != null ? DateTime.fromMillisecondsSinceEpoch(map['completedAt']) : null,
+      status: InterviewStatus.completed,
+    );
+  }
+
   int get totalQuestions => questions.length;
-  bool get isCompleted => currentQuestionIndex >= totalQuestions;
+  bool get isCompleted => currentQuestionIndex >= totalQuestions || status == InterviewStatus.completed;
   double get progressPercent =>
       totalQuestions == 0 ? 0 : currentQuestionIndex / totalQuestions;
 
@@ -40,4 +55,18 @@ class InterviewSession {
 
   double get overallScore =>
       results.isEmpty ? 0 : results.map((r) => r.score).reduce((a, b) => a + b) / results.length;
+
+  Map<String, dynamic> toMap() {
+    return {
+      'sessionId': sessionId,
+      'userId': userId,
+      'jobRole': jobRole,
+      'skills': skills,
+      'overallScore': overallScore,
+      'totalPoints': totalPoints,
+      'results': results.map((r) => r.toMap()).toList(),
+      'startedAt': startedAt.millisecondsSinceEpoch,
+      'completedAt': completedAt?.millisecondsSinceEpoch,
+    };
+  }
 }

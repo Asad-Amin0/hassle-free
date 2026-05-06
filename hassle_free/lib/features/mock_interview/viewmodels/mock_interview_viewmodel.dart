@@ -9,6 +9,7 @@ import '../services/answer_evaluation_service.dart';
 import '../services/tts_service.dart';
 import '../services/speech_service.dart';
 import '../services/lipsync_service.dart';
+import '../../../services/job_service.dart';
 
 class MockInterviewViewModel extends ChangeNotifier {
   final RagQuestionService _ragService = RagQuestionService();
@@ -24,8 +25,11 @@ class MockInterviewViewModel extends ChangeNotifier {
   String _finalTranscript = '';
   bool _isLoading = false;
   bool _isEvaluating = false;
+  String? _jobId;
   InterviewResult? _lastResult;
   String? _error;
+  int _remainingSeconds = 30;
+  Timer? _countdownTimer;
   final ValueNotifier<String> _phonemeNotifier = ValueNotifier<String>('X');
   Timer? _lipSyncTimer;
   double _lipSyncTime = 0.0;
@@ -55,6 +59,7 @@ class MockInterviewViewModel extends ChangeNotifier {
   bool get isListening => _speechService.isListening;
   InterviewResult? get lastResult => _lastResult;
   String? get error => _error;
+  int get remainingSeconds => _remainingSeconds;
   bool get isCompleted => _session?.isCompleted ?? false;
   InterviewQuestion? get currentQuestion => _session?.currentQuestion;
   List<InterviewResult> get allResults => _session?.results ?? [];
@@ -64,9 +69,11 @@ class MockInterviewViewModel extends ChangeNotifier {
     required String userId,
     required String jobRole,
     required List<String> skills,
+    String? jobId,
     int questionCount = 7,
   }) async {
     reset(); // Clear previous session state
+    _jobId = jobId;
     _isLoading = true;
     _error = null;
     notifyListeners();
@@ -193,7 +200,10 @@ class MockInterviewViewModel extends ChangeNotifier {
       animation: 'Idle',
       facialExpression: 'default',
     );
+    _remainingSeconds = 30; // Reset timer for new question
     notifyListeners();
+
+    _startCountdown();
 
     final success = await _speechService.startListening(
       onPartial: (partial) {
@@ -214,9 +224,23 @@ class MockInterviewViewModel extends ChangeNotifier {
 
 
     if (!success) {
+      _countdownTimer?.cancel();
       _error = 'Microphone not detected. Please ensure you have allowed microphone access in your browser and are using a secure connection (HTTPS or localhost).';
       notifyListeners();
     }
+  }
+
+  void _startCountdown() {
+    _countdownTimer?.cancel();
+    _countdownTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (_remainingSeconds > 0) {
+        _remainingSeconds--;
+        notifyListeners();
+      } else {
+        timer.cancel();
+        stopListening(); // Auto-submit when time is up
+      }
+    });
   }
 
 
@@ -226,9 +250,8 @@ class MockInterviewViewModel extends ChangeNotifier {
     if (_finalTranscript.isEmpty && _partialTranscript.isNotEmpty) {
       _finalTranscript = _partialTranscript;
     }
-    if (_finalTranscript.trim().isNotEmpty) {
-      await submitAnswer(_finalTranscript);
-    }
+    // Always submit, even if empty, to ensure interview moves forward
+    await submitAnswer(_finalTranscript);
   }
 
   // ─── Submit & Evaluate Answer ─────────────────────────────────────────────
@@ -236,6 +259,7 @@ class MockInterviewViewModel extends ChangeNotifier {
     final question = _session?.currentQuestion;
     if (question == null || _isEvaluating) return;
 
+    _countdownTimer?.cancel(); // Stop timer when answer is submitted
     await _speechService.cancelListening();
     _isEvaluating = true;
 
@@ -323,12 +347,40 @@ class MockInterviewViewModel extends ChangeNotifier {
       animation: 'talking',
       facialExpression: avg >= 0.6 ? 'smile' : 'default',
     );
+
+    // Save to Firestore if linked to a job application
+    if (_jobId != null && _session != null) {
+      try {
+        await JobService().saveInterviewResult(
+          jobId: _jobId!,
+          seekerId: _session!.userId,
+          resultData: _session!.toMap(),
+        );
+      } catch (e) {
+        debugPrint('Error auto-saving interview result: $e');
+      }
+    }
   }
 
   // ─── Skip Question ────────────────────────────────────────────────────────
   Future<void> skipQuestion() async {
     await _speechService.stopListening();
     await submitAnswer('(Skipped)');
+  }
+
+  // ─── End Interview ────────────────────────────────────────────────────────
+  Future<void> endInterview() async {
+    _isEvaluating = false; // Force stop evaluation
+    
+    // 1. Stop everything first (including voice)
+    await stopAll();
+    
+    // 2. Then update status to navigate
+    if (_session != null) {
+      _session!.status = InterviewStatus.completed;
+      _session!.completedAt = DateTime.now();
+      notifyListeners();
+    }
   }
 
   // ─── Retry Current Question ────────────────────────────────────────────────
@@ -348,13 +400,21 @@ class MockInterviewViewModel extends ChangeNotifier {
   // ─── Stop All Activities ──────────────────────────────────────────────────
   Future<void> stopAll() async {
     _lipSyncTimer?.cancel();
+    _countdownTimer?.cancel();
+    
+    // Force stop speech and listening immediately
     await _ttsService.stop();
     await _speechService.stopListening();
-    _avatarState = _avatarState.copyWith(
-      isSpeaking: false,
+
+    // Update state to standstill
+    _avatarState = const AvatarState(
       mood: AvatarMood.idle,
-      animation: 'idle',
+      animation: 'Idle',
+      facialExpression: 'default',
+      currentText: '',
+      isSpeaking: false,
     );
+    _phonemeNotifier.value = 'X';
     notifyListeners();
   }
 
@@ -362,6 +422,7 @@ class MockInterviewViewModel extends ChangeNotifier {
 
   void dispose() {
     _lipSyncTimer?.cancel();
+    _countdownTimer?.cancel();
     _ttsService.dispose();
     _speechService.dispose();
     super.dispose();

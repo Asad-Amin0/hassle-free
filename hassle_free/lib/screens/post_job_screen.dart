@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../services/job_service.dart';
+import '../services/company_service.dart';
 
 class PostJobScreen extends StatefulWidget {
   final Map<String, dynamic>? job;
@@ -12,6 +13,7 @@ class PostJobScreen extends StatefulWidget {
 class _PostJobScreenState extends State<PostJobScreen> {
   final _formKey = GlobalKey<FormState>();
   final _jobService = JobService();
+  final _companyService = CompanyService();
 
   @override
   void initState() {
@@ -28,6 +30,20 @@ class _PostJobScreenState extends State<PostJobScreen> {
       if (widget.job!['requiredSkills'] != null) {
         _skills.addAll(List<String>.from(widget.job!['requiredSkills']));
       }
+    } else {
+      _loadCompanyData();
+    }
+  }
+
+  Future<void> _loadCompanyData() async {
+    final profile = await _companyService.getCompanyProfile();
+    if (profile.isNotEmpty) {
+      setState(() {
+        _companyController.text = profile['name'] ?? '';
+        if (_locationController.text.isEmpty) {
+          _locationController.text = profile['location'] ?? '';
+        }
+      });
     }
   }
 
@@ -245,6 +261,7 @@ class _PostJobScreenState extends State<PostJobScreen> {
                       label: 'Company Name',
                       hint: 'Your company',
                       icon: Icons.business,
+                      readOnly: true,
                     ),
                   ),
                   const SizedBox(width: 16),
@@ -406,6 +423,7 @@ class _PostJobScreenState extends State<PostJobScreen> {
     required String hint,
     required IconData icon,
     int maxLines = 1,
+    bool readOnly = false,
   }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -418,7 +436,8 @@ class _PostJobScreenState extends State<PostJobScreen> {
         TextFormField(
           controller: controller,
           maxLines: maxLines,
-          style: const TextStyle(color: Colors.white),
+          readOnly: readOnly,
+          style: TextStyle(color: readOnly ? Colors.white60 : Colors.white),
           validator: (value) => value == null || value.trim().isEmpty ? 'Required' : null,
           decoration: InputDecoration(
             hintText: hint,
