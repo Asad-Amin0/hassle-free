@@ -40,6 +40,7 @@ class _EmployerDashboardScreenState extends State<EmployerDashboardScreen> {
   void initState() {
     super.initState();
     _jobService = JobService();
+    _jobService.syncApplicantCounts(); // Ensure UI stays in sync with actual documents
     _statsStream = _jobService.getEmployerStatsStream();
     _jobsStream = _jobService.getEmployerJobsStream();
     _applicantsStream = _jobService.getEmployerAllApplicantsStream();
@@ -455,8 +456,8 @@ class _EmployerDashboardScreenState extends State<EmployerDashboardScreen> {
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: _cardBg,
-        title: Text('Remove Applicant', style: TextStyle(color: _textColor)),
-        content: Text('Are you sure you want to remove this applicant?', style: TextStyle(color: _mutedText)),
+        title: Text('Remove Application', style: TextStyle(color: _textColor)),
+        content: Text('Are you sure you want to remove this application? The user\'s account will not be deleted.', style: TextStyle(color: _mutedText)),
         actions: [
           TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')),
           ElevatedButton(
@@ -604,7 +605,7 @@ class _EmployerDashboardScreenState extends State<EmployerDashboardScreen> {
                                   ),
                                 ),
                                 IconButton(
-                                  onPressed: () => _deleteApplicant(applicant['applicationId'] ?? ''),
+                                  onPressed: () => _deleteApplicant(applicant['id'] ?? ''),
                                   icon: const Icon(Icons.delete_outline, color: Colors.redAccent, size: 20),
                                 ),
                               ],
@@ -1537,7 +1538,7 @@ class _EmployerDashboardScreenState extends State<EmployerDashboardScreen> {
         backgroundColor: widget.isDarkMode ? const Color(0xFF1E293B) : Colors.white,
 
         title: Text('Delete Application?', style: TextStyle(color: _textColor)),
-        content: Text('Are you sure you want to remove this candidate?', style: TextStyle(color: _mutedText)),
+        content: Text('Are you sure you want to remove this application? The user\'s account will not be deleted.', style: TextStyle(color: _mutedText)),
         actions: [
           TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
           TextButton(

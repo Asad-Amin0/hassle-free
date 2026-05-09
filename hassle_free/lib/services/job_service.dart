@@ -192,8 +192,23 @@ class JobService {
   // ─── Delete a job posting ──────────────────────────────────────────────────
   Future<bool> deleteJob(String jobId) async {
     try {
+      // Delete the job itself
       await _db.collection('jobs').doc(jobId).delete();
-      debugPrint('Job deleted successfully: $jobId');
+      
+      // Delete all applications associated with this job
+      final applicationsSnapshot = await _db
+          .collection('applications')
+          .where('jobId', isEqualTo: jobId)
+          .get();
+          
+      // Use a batch to delete all applications efficiently
+      final batch = _db.batch();
+      for (var doc in applicationsSnapshot.docs) {
+        batch.delete(doc.reference);
+      }
+      await batch.commit();
+
+      debugPrint('Job deleted successfully: $jobId along with its applications');
       return true;
     } catch (e) {
       debugPrint('Error deleting job: $e');
@@ -206,11 +221,59 @@ class JobService {
     try {
       data['updatedAt'] = FieldValue.serverTimestamp();
       await _db.collection('jobs').doc(jobId).update(data);
+      
+      // If the title was updated, we need to update the jobTitle in all applications
+      if (data.containsKey('title')) {
+        final newTitle = data['title'];
+        final applicationsSnapshot = await _db
+            .collection('applications')
+            .where('jobId', isEqualTo: jobId)
+            .get();
+            
+        if (applicationsSnapshot.docs.isNotEmpty) {
+          final batch = _db.batch();
+          for (var doc in applicationsSnapshot.docs) {
+            batch.update(doc.reference, {'jobTitle': newTitle});
+          }
+          await batch.commit();
+        }
+      }
+
       debugPrint('Job updated: $jobId');
       return true;
     } catch (e) {
       debugPrint('Error updating job: $e');
       return false;
+    }
+  }
+
+  // ─── Sync applicant counts ────────────────────────────────────────────────
+  Future<void> syncApplicantCounts() async {
+    try {
+      final user = _auth.currentUser;
+      if (user == null) return;
+
+      final jobsSnapshot = await _db
+          .collection('jobs')
+          .where('employerId', isEqualTo: user.uid)
+          .get();
+
+      for (var jobDoc in jobsSnapshot.docs) {
+        final applicationsSnapshot = await _db
+            .collection('applications')
+            .where('jobId', isEqualTo: jobDoc.id)
+            .get();
+            
+        final actualCount = applicationsSnapshot.docs.length;
+        final currentCount = (jobDoc.data()['applicants'] as num?)?.toInt() ?? 0;
+        
+        if (currentCount != actualCount) {
+          await jobDoc.reference.update({'applicants': actualCount});
+          debugPrint('Synced applicant count for job ${jobDoc.id} to $actualCount');
+        }
+      }
+    } catch (e) {
+      debugPrint('Error syncing applicant counts: $e');
     }
   }
   // ─── Apply for a job ──────────────────────────────────────────────────────
@@ -361,7 +424,20 @@ class JobService {
   // ─── Delete application (for employers) ─────────────────────────────
   Future<bool> deleteApplication(String applicationId) async {
     try {
+      // First get the application to find out which job it belongs to
+      final appDoc = await _db.collection('applications').doc(applicationId).get();
+      final jobId = appDoc.data()?['jobId'] as String?;
+
+      // Delete the application
       await _db.collection('applications').doc(applicationId).delete();
+
+      // Decrement the applicant count on the job
+      if (jobId != null) {
+        await _db.collection('jobs').doc(jobId).update({
+          'applicants': FieldValue.increment(-1),
+        });
+      }
+
       debugPrint('Application $applicationId deleted');
       return true;
     } catch (e) {
