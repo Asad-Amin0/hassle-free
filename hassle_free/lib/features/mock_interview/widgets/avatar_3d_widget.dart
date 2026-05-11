@@ -24,6 +24,8 @@ class _Avatar3DWidgetState extends State<Avatar3DWidget>
     with SingleTickerProviderStateMixin {
   late AnimationController _glowController;
 
+  bool _isModelLoaded = false;
+
   @override
   void initState() {
     super.initState();
@@ -31,6 +33,15 @@ class _Avatar3DWidgetState extends State<Avatar3DWidget>
       vsync: this,
       duration: const Duration(milliseconds: 1200),
     )..repeat(reverse: true);
+
+    // Simulate model loading delay for UI smoothness
+    Future.delayed(const Duration(seconds: 2), () {
+      if (mounted) {
+        setState(() {
+          _isModelLoaded = true;
+        });
+      }
+    });
   }
 
   @override
@@ -93,19 +104,47 @@ class _Avatar3DWidgetState extends State<Avatar3DWidget>
                       width: 2,
                     ),
                   ),
-                  child: ModelViewer(
-                    key: ValueKey(widget.avatarState.animation),
-                    src: 'assets/models/avatar.glb',
-                    alt: 'AI Interviewer Avatar',
-                    autoPlay: true,
-                    autoRotate: false,
-                    cameraControls: false,
-                    cameraOrbit: '0deg 80deg 1.8m',
-                    cameraTarget: '0m 1.55m 0m',
-                    fieldOfView: '25deg',
-                    animationName: widget.avatarState.animation,
-                    backgroundColor: Colors.transparent,
-                    relatedJs: _generateLipSyncJs(widget.phonemeNotifier.value),
+                  child: Stack(
+                    children: [
+                      ModelViewer(
+                        key: ValueKey(widget.avatarState.animation),
+                        src: 'assets/models/avatar.glb',
+                        alt: 'AI Interviewer Avatar',
+                        autoPlay: true,
+                        autoRotate: false,
+                        cameraControls: false,
+                        cameraOrbit: '0deg 80deg 1.8m',
+                        cameraTarget: '0m 1.55m 0m',
+                        fieldOfView: '25deg',
+                        animationName: widget.avatarState.animation,
+                        backgroundColor: Colors.transparent,
+                        relatedJs: _generateLipSyncJs(widget.phonemeNotifier.value),
+                      ),
+                      if (!_isModelLoaded)
+                        Container(
+                          color: const Color(0xFF1E293B),
+                          child: Center(
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const CircularProgressIndicator(
+                                  color: Color(0xFF4F46E5),
+                                  strokeWidth: 2,
+                                ),
+                                const SizedBox(height: 16),
+                                Text(
+                                  'Initializing Avatar...',
+                                  style: TextStyle(
+                                    color: Colors.white.withValues(alpha: 0.5),
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ).animate().fadeOut(duration: 400.ms, delay: 2.seconds),
+                    ],
                   ),
                 ),
 
