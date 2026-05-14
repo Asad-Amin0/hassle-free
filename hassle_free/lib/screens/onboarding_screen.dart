@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import '../models/onboarding_data.dart';
 import 'login_screen.dart';
+import 'web_home_page.dart';
 
 class OnboardingScreen extends StatefulWidget {
   const OnboardingScreen({super.key});
@@ -36,8 +38,6 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final size = MediaQuery.of(context).size;
-    final isWeb = size.width > 800;
 
     return Scaffold(
       backgroundColor: const Color(0xFF0F172A),
@@ -78,15 +78,15 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                             children: [
                               // Icon Container with Gradient & Shadow
                               Container(
-                                height: isWeb ? 280 : 200,
-                                width: isWeb ? 280 : 200,
+                                height: kIsWeb ? 280 : 200,
+                                width: kIsWeb ? 280 : 200,
                                 decoration: BoxDecoration(
                                   gradient: LinearGradient(
                                     colors: _pages[index].gradient,
                                     begin: Alignment.topLeft,
                                     end: Alignment.bottomRight,
                                   ),
-                                  borderRadius: BorderRadius.circular(isWeb ? 60 : 40),
+                                  borderRadius: BorderRadius.circular(kIsWeb ? 60 : 40),
                                   boxShadow: [
                                     BoxShadow(
                                       color: _pages[index].gradient[0].withValues(alpha: 0.3),
@@ -98,7 +98,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                                 child: Center(
                                   child: Icon(
                                     _pages[index].icon,
-                                    size: isWeb ? 120 : 80,
+                                    size: kIsWeb ? 120 : 80,
                                     color: Colors.white,
                                   ),
                                 ),
@@ -109,7 +109,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                                 textAlign: TextAlign.center,
                                 style: TextStyle(
                                   color: Colors.white,
-                                  fontSize: isWeb ? 48 : 36,
+                                  fontSize: kIsWeb ? 48 : 36,
                                   fontWeight: FontWeight.w900,
                                   height: 1.1,
                                   letterSpacing: -1,
@@ -121,7 +121,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                                 textAlign: TextAlign.center,
                                 style: TextStyle(
                                   color: const Color(0xFF94A3B8),
-                                  fontSize: isWeb ? 20 : 16,
+                                  fontSize: kIsWeb ? 20 : 16,
                                   height: 1.6,
                                 ),
                               ),
@@ -160,7 +160,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                       
                       // Action Buttons
                       SizedBox(
-                        width: isWeb ? 400 : double.infinity,
+                        width: kIsWeb ? 400 : double.infinity,
                         height: 64,
                         child: Container(
                           decoration: BoxDecoration(
@@ -184,15 +184,15 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                                   curve: Curves.easeInOutQuart,
                                 );
                               } else {
-                                Navigator.pushReplacement(
-                                  context,
-                                  PageRouteBuilder(
-                                    pageBuilder: (context, animation, secondaryAnimation) => const LoginScreen(),
-                                    transitionsBuilder: (context, animation, secondaryAnimation, child) {
-                                      return FadeTransition(opacity: animation, child: child);
-                                    },
-                                  ),
-                                );
+                                  Navigator.pushReplacement(
+                                    context,
+                                    PageRouteBuilder(
+                                      pageBuilder: (context, animation, secondaryAnimation) => kIsWeb ? const WebHomePage() : const LoginScreen(),
+                                      transitionsBuilder: (context, animation, secondaryAnimation, child) {
+                                        return FadeTransition(opacity: animation, child: child);
+                                      },
+                                    ),
+                                  );
                               }
                             },
                             style: ElevatedButton.styleFrom(

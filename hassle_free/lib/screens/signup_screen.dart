@@ -8,7 +8,8 @@ import '../widgets/google_sign_in/google_button.dart';
 
 
 class SignUpScreen extends StatefulWidget {
-  const SignUpScreen({super.key});
+  final bool initialIsJobSeeker;
+  const SignUpScreen({super.key, this.initialIsJobSeeker = true});
 
   @override
   State<SignUpScreen> createState() => _SignUpScreenState();
@@ -20,7 +21,13 @@ class _SignUpScreenState extends State<SignUpScreen> {
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
   bool _isLoading = false;
-  bool _isJobSeeker = true;
+  late bool _isJobSeeker;
+
+  @override
+  void initState() {
+    super.initState();
+    _isJobSeeker = widget.initialIsJobSeeker;
+  }
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
   final AuthService _authService = AuthService();

@@ -65,6 +65,7 @@ dependencies:
   video_player: ^2.11.1
   chewie: ^1.13.1
   supabase_flutter: ^2.12.4
+  lucide_icons: ^0.257.0
 
 dev_dependencies:
   flutter_test:
@@ -76,8 +77,9 @@ flutter:
   uses-material-design: true
 
   assets:
-    # - assets/images/
+    - assets/images/
     - assets/models/
+    - assets/videos/
   #   - images/a_dot_ham.jpeg
 
   # An image asset can refer to one or more resolution-specific "variants", see
