@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'onboarding_screen.dart';
 import 'dashboard_screen.dart';
+import 'web_home_page.dart';
+import 'login_screen.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -55,10 +57,13 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
         }
       } else {
         if (mounted) {
+          final bool isMobileView = MediaQuery.of(context).size.width < 900;
+          
           Navigator.pushReplacement(
             context,
             PageRouteBuilder(
-              pageBuilder: (context, animation, secondaryAnimation) => const OnboardingScreen(),
+              pageBuilder: (context, animation, secondaryAnimation) => 
+                (kIsWeb && !isMobileView) ? const WebHomePage() : const LoginScreen(),
               transitionsBuilder: (context, animation, secondaryAnimation, child) {
                 return FadeTransition(opacity: animation, child: child);
               },
@@ -79,6 +84,9 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
 
   @override
   Widget build(BuildContext context) {
+    final size = MediaQuery.of(context).size;
+    final bool isSmallScreen = size.width < 600;
+
     return Scaffold(
       backgroundColor: const Color(0xFF0F172A),
       body: Container(
@@ -101,8 +109,8 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
               top: -150,
               right: -150,
               child: Container(
-                width: 400,
-                height: 400,
+                width: isSmallScreen ? 300 : 400,
+                height: isSmallScreen ? 300 : 400,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   color: const Color(0xFF6366F1).withValues(alpha: 0.15),
@@ -113,8 +121,8 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
               bottom: -100,
               left: -100,
               child: Container(
-                width: 300,
-                height: 300,
+                width: isSmallScreen ? 200 : 300,
+                height: isSmallScreen ? 200 : 300,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   color: const Color(0xFF8B5CF6).withValues(alpha: 0.1),
@@ -128,15 +136,15 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
                   ScaleTransition(
                     scale: _scaleAnimation,
                     child: Container(
-                      height: 160,
-                      width: 160,
+                      height: isSmallScreen ? 120 : 160,
+                      width: isSmallScreen ? 120 : 160,
                       decoration: BoxDecoration(
                         gradient: const LinearGradient(
                           colors: [Color(0xFF6366F1), Color(0xFF8B5CF6)],
                           begin: Alignment.topLeft,
                           end: Alignment.bottomRight,
                         ),
-                        borderRadius: BorderRadius.circular(40),
+                        borderRadius: BorderRadius.circular(isSmallScreen ? 30 : 40),
                         boxShadow: [
                           BoxShadow(
                             color: const Color(0xFF6366F1).withValues(alpha: 0.4),
@@ -145,8 +153,8 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
                           ),
                         ],
                       ),
-                      child: const Center(
-                        child: Icon(Icons.auto_awesome, color: Colors.white, size: 80),
+                      child: Center(
+                        child: Icon(Icons.auto_awesome, color: Colors.white, size: isSmallScreen ? 60 : 80),
                       ),
                     ),
                   ),
@@ -157,36 +165,36 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
                       children: [
                         RichText(
                           textAlign: TextAlign.center,
-                          text: const TextSpan(
+                          text: TextSpan(
                             children: [
                               TextSpan(
                                 text: 'HASSLE-',
                                 style: TextStyle(
                                   color: Colors.white,
-                                  fontSize: 56,
+                                  fontSize: isSmallScreen ? 40 : 56,
                                   fontWeight: FontWeight.w900,
-                                  letterSpacing: 4,
+                                  letterSpacing: isSmallScreen ? 2 : 4,
                                 ),
                               ),
                               TextSpan(
                                 text: '\nFREE',
                                 style: TextStyle(
-                                  color: Color(0xFF8B5CF6),
-                                  fontSize: 56,
+                                  color: const Color(0xFF8B5CF6),
+                                  fontSize: isSmallScreen ? 40 : 56,
                                   fontWeight: FontWeight.w900,
-                                  letterSpacing: 4,
+                                  letterSpacing: isSmallScreen ? 2 : 4,
                                 ),
                               ),
                             ],
                           ),
                         ),
                         const SizedBox(height: 24),
-                        const Text(
+                        Text(
                           'AI-Powered Career Solutions',
                           textAlign: TextAlign.center,
                           style: TextStyle(
-                            color: Color(0xFF94A3B8),
-                            fontSize: 18,
+                            color: const Color(0xFF94A3B8),
+                            fontSize: isSmallScreen ? 14 : 18,
                             fontWeight: FontWeight.w500,
                             letterSpacing: 1.2,
                           ),

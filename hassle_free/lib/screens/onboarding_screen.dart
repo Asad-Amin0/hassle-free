@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import '../models/onboarding_data.dart';
-import 'login_screen.dart';
-import 'web_home_page.dart';
+import 'splash_screen.dart';
 
 class OnboardingScreen extends StatefulWidget {
   const OnboardingScreen({super.key});
@@ -187,7 +186,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                                   Navigator.pushReplacement(
                                     context,
                                     PageRouteBuilder(
-                                      pageBuilder: (context, animation, secondaryAnimation) => kIsWeb ? const WebHomePage() : const LoginScreen(),
+                                      pageBuilder: (context, animation, secondaryAnimation) => const SplashScreen(),
                                       transitionsBuilder: (context, animation, secondaryAnimation, child) {
                                         return FadeTransition(opacity: animation, child: child);
                                       },

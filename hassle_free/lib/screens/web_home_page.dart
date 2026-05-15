@@ -19,6 +19,7 @@ class _WebHomePageState extends State<WebHomePage> {
   final ScrollController _scrollController = ScrollController();
   bool _isScrolled = false;
 
+  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   final GlobalKey _featuresKey = GlobalKey();
   final GlobalKey _howItWorksKey = GlobalKey();
   final GlobalKey _demoKey = GlobalKey();
@@ -58,9 +59,11 @@ class _WebHomePageState extends State<WebHomePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      key: _scaffoldKey,
       backgroundColor: const Color(0xFFF8FAFC),
       extendBodyBehindAppBar: true,
       appBar: _buildHeader(),
+      drawer: _buildMobileDrawer(),
       body: SingleChildScrollView(
         controller: _scrollController,
         child: Column(
@@ -169,9 +172,7 @@ class _WebHomePageState extends State<WebHomePage> {
                   ] else
                     IconButton(
                       icon: const Icon(Icons.menu),
-                      onPressed: () {
-                        // Show mobile menu
-                      },
+                      onPressed: () => _scaffoldKey.currentState?.openDrawer(),
                     ),
                 ],
               ),
@@ -195,6 +196,100 @@ class _WebHomePageState extends State<WebHomePage> {
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildMobileDrawer() {
+    return Drawer(
+      child: Container(
+        color: Colors.white,
+        child: Column(
+          children: [
+            DrawerHeader(
+              decoration: const BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [Color(0xFF6366F1), Color(0xFF06B6D4)],
+                ),
+              ),
+              child: Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(LucideIcons.sparkles, color: Colors.white, size: 40),
+                    const SizedBox(height: 12),
+                    Text(
+                      'HASSLE-FREE',
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            Expanded(
+              child: ListView(
+                padding: EdgeInsets.zero,
+                children: [
+                  _drawerItem('Features', LucideIcons.layers, () {
+                    Navigator.pop(context);
+                    _scrollToSection(_featuresKey);
+                  }),
+                  _drawerItem('How It Works', LucideIcons.helpCircle, () {
+                    Navigator.pop(context);
+                    _scrollToSection(_howItWorksKey);
+                  }),
+                  _drawerItem('For Employers', LucideIcons.briefcase, () {
+                    Navigator.pop(context);
+                    _scrollToSection(_employersKey);
+                  }),
+                  _drawerItem('Testimonials', LucideIcons.messageSquare, () {
+                    Navigator.pop(context);
+                    _scrollToSection(_testimonialsKey);
+                  }),
+                  const Divider(indent: 20, endIndent: 20),
+                  _drawerItem('Sign In', LucideIcons.logIn, () {
+                    Navigator.pop(context);
+                    Navigator.push(context, MaterialPageRoute(builder: (context) => const LoginScreen()));
+                  }),
+                  Padding(
+                    padding: const EdgeInsets.all(20),
+                    child: ElevatedButton(
+                      onPressed: () {
+                        Navigator.pop(context);
+                        Navigator.push(context, MaterialPageRoute(builder: (context) => const SignUpScreen(initialIsJobSeeker: true)));
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF6366F1),
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
+                      child: Text('Get Started Free', style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.bold)),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _drawerItem(String title, IconData icon, VoidCallback onTap) {
+    return ListTile(
+      leading: Icon(icon, color: const Color(0xFF64748B)),
+      title: Text(
+        title,
+        style: GoogleFonts.plusJakartaSans(
+          fontWeight: FontWeight.w600,
+          color: const Color(0xFF1E293B),
+        ),
+      ),
+      onTap: onTap,
     );
   }
 }
