@@ -1,15 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:provider/provider.dart';
 import 'firebase_options.dart';
 import 'screens/splash_screen.dart';
-import 'screens/onboarding_screen.dart';
 import 'services/auth_service.dart';
 import 'services/supabase_service.dart';
 import 'utils/navigator_utils.dart';
 import 'providers/theme_provider.dart';
-import 'package:flutter/foundation.dart' show kIsWeb;
+
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -30,23 +28,19 @@ void main() async {
   // Initialize Supabase Service
   await SupabaseService().init();
 
-  final user = FirebaseAuth.instance.currentUser;
-  final bool isLoggedIn = user != null;
-  
   runApp(
     MultiProvider(
       providers: [
         Provider<AuthService>(create: (_) => AuthService()),
         ChangeNotifierProvider(create: (_) => ThemeProvider()),
       ],
-      child: MyApp(isLoggedIn: isLoggedIn),
+      child: const MyApp(),
     ),
   );
 }
 
 class MyApp extends StatelessWidget {
-  final bool isLoggedIn;
-  const MyApp({super.key, required this.isLoggedIn});
+  const MyApp({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -84,7 +78,7 @@ class MyApp extends StatelessWidget {
           ),
         ),
       ),
-      home: (kIsWeb || isLoggedIn) ? const SplashScreen() : const OnboardingScreen(),
+      home: const SplashScreen(),
     );
   }
 }

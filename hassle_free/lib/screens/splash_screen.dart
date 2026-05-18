@@ -4,7 +4,8 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dashboard_screen.dart';
 import 'web_home_page.dart';
-import 'login_screen.dart';
+
+import 'onboarding_screen.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -57,13 +58,14 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
         }
       } else {
         if (mounted) {
-          final bool isMobileView = MediaQuery.of(context).size.width < 900;
+          // Check if it is web and also a large screen (desktop view)
+          final bool isDesktopWeb = kIsWeb && MediaQuery.of(context).size.width >= 900;
           
           Navigator.pushReplacement(
             context,
             PageRouteBuilder(
               pageBuilder: (context, animation, secondaryAnimation) => 
-                (kIsWeb && !isMobileView) ? const WebHomePage() : const LoginScreen(),
+                isDesktopWeb ? const WebHomePage() : const OnboardingScreen(),
               transitionsBuilder: (context, animation, secondaryAnimation, child) {
                 return FadeTransition(opacity: animation, child: child);
               },

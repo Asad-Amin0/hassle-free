@@ -214,26 +214,30 @@ class _JobsScreenState extends State<JobsScreen> {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              _userName.isNotEmpty
-                  ? 'Jobs for $_userName'
-                  : 'Explore Opportunities',
-              style: TextStyle(
-                fontSize: 28,
-                fontWeight: FontWeight.bold,
-                color: _textColor,
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                _userName.isNotEmpty
+                    ? 'Jobs for $_userName'
+                    : 'Explore Opportunities',
+                style: TextStyle(
+                  fontSize: 28,
+                  fontWeight: FontWeight.bold,
+                  color: _textColor,
+                ),
+                overflow: TextOverflow.ellipsis,
               ),
-            ),
-            Text(
-              _userSkills.isNotEmpty
-                  ? 'Matched with ${_userSkills.length} skills from your resume'
-                  : 'Upload your resume for better job matches',
-              style: TextStyle(color: _mutedText),
-            ),
-          ],
+              Text(
+                _userSkills.isNotEmpty
+                    ? 'Matched with ${_userSkills.length} skills from your resume'
+                    : 'Upload your resume for better job matches',
+                style: TextStyle(color: _mutedText),
+                overflow: TextOverflow.ellipsis,
+              ),
+            ],
+          ),
         ),
         if (isWeb)
           ElevatedButton.icon(
@@ -409,21 +413,23 @@ class _JobsScreenState extends State<JobsScreen> {
   }
 
   Widget _buildWebJobGrid() {
+    bool isWeb = MediaQuery.of(context).size.width >= 1100;
     return GridView.builder(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
       itemCount: _filteredJobs.length,
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 2,
+      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: isWeb ? (MediaQuery.of(context).size.width > 1600 ? 3 : 2) : 1,
         crossAxisSpacing: 24,
         mainAxisSpacing: 24,
-        mainAxisExtent: 250,
+        mainAxisExtent: 320,
       ),
       itemBuilder: (context, index) => _buildJobCard(_filteredJobs[index]),
     );
   }
 
   Widget _buildJobCard(Map<String, dynamic> job) {
+    bool isWeb = MediaQuery.of(context).size.width >= 1100;
     bool isHot = job['isHot'];
     int score = job['matchScore'];
 
@@ -613,26 +619,33 @@ class _JobsScreenState extends State<JobsScreen> {
           ],
           const Spacer(),
           Row(
+            crossAxisAlignment: CrossAxisAlignment.end,
             children: [
-              ...(job['tags'] as List<String>).map(
-                (tag) => Container(
-                  margin: const EdgeInsets.only(right: 8),
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 6,
-                  ),
-                  decoration: BoxDecoration(
-                    color: _cardBg,
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: _cardBorder),
-                  ),
-                  child: Text(
-                    tag,
-                    style: TextStyle(fontSize: 12, color: _mutedText),
-                  ),
+              Expanded(
+                child: Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: (job['tags'] as List<String>).take(isWeb ? 4 : 3).map(
+                    (tag) => Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 6,
+                      ),
+                      decoration: BoxDecoration(
+                        color: _cardBg,
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: _cardBorder),
+                      ),
+                      child: Text(
+                        tag,
+                        style: TextStyle(fontSize: 12, color: _mutedText),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ).toList(),
                 ),
               ),
-              const Spacer(),
+              const SizedBox(width: 12),
               Column(
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
