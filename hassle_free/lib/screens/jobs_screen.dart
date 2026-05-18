@@ -617,7 +617,7 @@ class _JobsScreenState extends State<JobsScreen> {
               ),
             ),
           ],
-          const Spacer(),
+          isWeb ? const Spacer() : const SizedBox(height: 16),
           Row(
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
