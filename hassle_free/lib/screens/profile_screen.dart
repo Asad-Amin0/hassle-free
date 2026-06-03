@@ -79,9 +79,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final data = await _resumeService.getLatestResumeAnalysis();
     if (data != null && mounted) {
       setState(() {
-        // Only override if name was empty in account
-        if (_name == "User" || _name.isEmpty) {
-          _name = data['name'] ?? "User";
+        if (data['name'] != null && data['name'].toString().trim().isNotEmpty) {
+          _name = data['name'];
         }
         _location = data['location'] ?? "Lahore, Punjab, Pakistan";
         _education = data['education'] ?? "";
@@ -102,7 +101,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
         if (mounted) {
           setState(() {
             if (data != null) {
-              _name = data['name'] ?? "User";
+              if (data['name'] != null && data['name'].toString().trim().isNotEmpty) {
+                _name = data['name'];
+              }
               _location = data['location'] ?? "Lahore, Punjab, Pakistan";
               _education = data['education'] ?? "";
               _experience = data['experience'] ?? "";

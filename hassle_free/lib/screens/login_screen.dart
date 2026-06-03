@@ -84,12 +84,7 @@ class _LoginScreenState extends State<LoginScreen> {
       return;
     }
 
-    final localPart = email.split('@')[0];
-    final numberCount = localPart.replaceAll(RegExp(r'[^0-9]'), '').length;
-    if (numberCount < 2 || numberCount > 3) {
-      setState(() => _emailError = 'The part before the @ symbol must contain exactly 2 to 3 numbers.');
-      return;
-    }
+
 
     setState(() => _isLoading = true);
     try {
@@ -642,6 +637,7 @@ class _LoginScreenState extends State<LoginScreen> {
             fillColor: Colors.white.withValues(alpha: 0.05),
             contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
             errorText: errorText,
+            errorMaxLines: 3,
             errorStyle: const TextStyle(color: Colors.redAccent),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(16),

@@ -20,6 +20,10 @@ class _SignUpScreenState extends State<SignUpScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
+  String? _nameError;
+  String? _emailError;
+  String? _passwordError;
+  String? _confirmPasswordError;
   bool _isLoading = false;
   late bool _isJobSeeker;
 
@@ -38,41 +42,50 @@ class _SignUpScreenState extends State<SignUpScreen> {
     final confirmPassword = _confirmPasswordController.text.trim();
     final name = _nameController.text.trim();
 
-    if (name.isEmpty || email.isEmpty || password.isEmpty) {
-      _showDialog('Error', 'Please fill all required fields');
-      return;
+    setState(() {
+      _nameError = null;
+      _emailError = null;
+      _passwordError = null;
+      _confirmPasswordError = null;
+    });
+
+    bool hasError = false;
+
+    if (name.isEmpty) {
+      setState(() => _nameError = 'Please enter your full name');
+      hasError = true;
     }
+    if (email.isEmpty) {
+      setState(() => _emailError = 'Please enter your email');
+      hasError = true;
+    }
+    if (password.isEmpty) {
+      setState(() => _passwordError = 'Please enter your password');
+      hasError = true;
+    }
+    if (confirmPassword.isEmpty) {
+      setState(() => _confirmPasswordError = 'Please confirm your password');
+      hasError = true;
+    }
+
+    if (hasError) return;
 
     final emailRegex = RegExp(r'^[\w-\.]{3,}@([\w-]+\.)+[\w-]{2,4}$');
     if (!emailRegex.hasMatch(email)) {
-      _showDialog('Invalid Email', 'Please put a proper and valid email format. The part before @ must be at least 3 characters (e.g. john12@example.com).');
+      setState(() => _emailError = 'Invalid email. Must have 3+ characters before @.');
       return;
     }
 
-    final localPart = email.split('@')[0];
-    final numberCount = localPart.replaceAll(RegExp(r'[^0-9]'), '').length;
-    if (numberCount < 2 || numberCount > 3) {
-      _showDialog('Invalid Email', 'The part before the @ symbol must contain exactly 2 to 3 numbers.');
-      return;
-    }
 
     if (password != confirmPassword) {
-      _showDialog('Error', 'Passwords do not match');
+      setState(() => _confirmPasswordError = 'Passwords do not match');
       return;
     }
 
     if (password.length < 8 || 
         !password.contains(RegExp(r'[A-Z]')) || 
         !password.contains(RegExp(r'[!@#\$%^&*(),.?":{}|<>]'))) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Password is not strong! It must be at least 8 characters, with 1 uppercase letter and 1 special character.'),
-            backgroundColor: Colors.redAccent,
-            duration: Duration(seconds: 4),
-          ),
-        );
-      }
+      setState(() => _passwordError = 'Must be 8+ characters, with 1 uppercase & 1 special character.');
       return;
     }
 
@@ -327,6 +340,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                                   controller: _nameController,
                                   icon: Icons.person_outline,
                                   placeholder: 'John Doe',
+                                  errorText: _nameError,
                                 ),
                                 const SizedBox(height: 20),
                                 _buildInputField(
@@ -334,6 +348,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                                   controller: _emailController,
                                   icon: Icons.email_outlined,
                                   placeholder: 'you@example.com',
+                                  errorText: _emailError,
                                 ),
                                 const SizedBox(height: 20),
                                 _buildInputField(
@@ -348,6 +363,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                                       _obscurePassword = !_obscurePassword;
                                     });
                                   },
+                                  errorText: _passwordError,
                                 ),
                                 const SizedBox(height: 20),
                                 _buildInputField(
@@ -362,6 +378,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                                       _obscureConfirmPassword = !_obscureConfirmPassword;
                                     });
                                   },
+                                  errorText: _confirmPasswordError,
                                 ),
                                 const SizedBox(height: 32),
                                 SizedBox(
@@ -478,25 +495,38 @@ class _SignUpScreenState extends State<SignUpScreen> {
     required IconData icon,
     required String placeholder,
     bool obscureText = false,
+    String? errorText,
     bool isPassword = false,
     VoidCallback? onTogglePassword,
   }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          label,
-          style: const TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.bold,
-            color: Color(0xFF94A3B8),
+        if (label.isNotEmpty) ...[
+          Text(
+            label,
+            style: const TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.bold,
+              color: Color(0xFF94A3B8),
+            ),
           ),
-        ),
-        const SizedBox(height: 10),
+          const SizedBox(height: 10),
+        ],
         TextField(
           controller: controller,
           obscureText: obscureText,
           style: const TextStyle(fontSize: 16, color: Colors.white),
+          onChanged: (_) {
+            if (errorText != null) {
+              setState(() {
+                if (label.contains('Name')) _nameError = null;
+                if (label.contains('Email')) _emailError = null;
+                if (label == 'Password') _passwordError = null;
+                if (label.contains('Confirm')) _confirmPasswordError = null;
+              });
+            }
+          },
           decoration: InputDecoration(
             hintText: placeholder,
             hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.3), fontSize: 15),
@@ -513,7 +543,10 @@ class _SignUpScreenState extends State<SignUpScreen> {
                 : null,
             filled: true,
             fillColor: Colors.white.withValues(alpha: 0.05),
-            contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+            contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
+            errorText: errorText,
+            errorMaxLines: 3,
+            errorStyle: const TextStyle(color: Colors.redAccent),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(16),
               borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.1)),
@@ -525,6 +558,14 @@ class _SignUpScreenState extends State<SignUpScreen> {
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(16),
               borderSide: const BorderSide(color: Color(0xFF6366F1), width: 2),
+            ),
+            errorBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(16),
+              borderSide: const BorderSide(color: Colors.redAccent, width: 1),
+            ),
+            focusedErrorBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(16),
+              borderSide: const BorderSide(color: Colors.redAccent, width: 2),
             ),
           ),
         ),

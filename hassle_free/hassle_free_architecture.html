@@ -1,0 +1,1459 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Technical architecture, interactive stack orbit, and key technologies table for HASSLE-FREE career enhancement and recruitment ecosystem.">
+    <title>HASSLE-FREE - Technical Architecture & Tech Stack</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --bg-dark: #090d16;
+            --bg-card: rgba(17, 24, 39, 0.7);
+            --border-color: rgba(255, 255, 255, 0.08);
+            --text-primary: #f8fafc;
+            --text-secondary: #94a3b8;
+            --bg-radial: radial-gradient(circle at 10% 20%, rgba(59, 130, 246, 0.05) 0%, transparent 40%),
+                         radial-gradient(circle at 90% 80%, rgba(139, 92, 246, 0.06) 0%, transparent 40%);
+            
+            /* Curated Neon Color Palette */
+            --color-flutter: #0284c7;
+            --color-firebase: #f59e0b;
+            --color-aws: #ec4899;
+            --color-spacy: #10b981;
+            --color-tensorflow: #ff6b2b;
+            --color-docker: #2563eb;
+            --color-git: #ef4444;
+            
+            --glow-flutter: 0 0 15px rgba(2, 132, 199, 0.4);
+            --glow-firebase: 0 0 15px rgba(245, 158, 11, 0.4);
+            --glow-aws: 0 0 15px rgba(236, 72, 153, 0.4);
+            --glow-spacy: 0 0 15px rgba(16, 185, 129, 0.4);
+            --glow-tensorflow: 0 0 15px rgba(255, 107, 43, 0.4);
+            --glow-docker: 0 0 15px rgba(37, 99, 243, 0.4);
+            
+            --transition-speed: 0.3s;
+        }
+
+        /* Light Theme Styles Override */
+        body.light-theme {
+            --bg-dark: #f8fafc;
+            --bg-card: rgba(255, 255, 255, 0.85);
+            --border-color: rgba(15, 23, 42, 0.08);
+            --text-primary: #0f172a;
+            --text-secondary: #475569;
+            --bg-radial: radial-gradient(circle at 10% 20%, rgba(59, 130, 246, 0.04) 0%, transparent 40%),
+                         radial-gradient(circle at 90% 80%, rgba(139, 92, 246, 0.04) 0%, transparent 40%);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background-color: var(--bg-dark);
+            color: var(--text-primary);
+            font-family: 'Inter', sans-serif;
+            line-height: 1.6;
+            overflow-x: hidden;
+            background-image: var(--bg-radial);
+            background-attachment: fixed;
+            transition: background-color var(--transition-speed) ease, color var(--transition-speed) ease;
+        }
+
+        h1, h2, h3, h4, .brand-font {
+            font-family: 'Space Grotesk', sans-serif;
+            font-weight: 700;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+            position: relative;
+        }
+
+        /* Glassmorphism Styling */
+        .glass-panel {
+            background: var(--bg-card);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 2rem;
+            margin-bottom: 2.5rem;
+            box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.3);
+            transition: all var(--transition-speed) ease;
+        }
+
+        body.light-theme .glass-panel {
+            box-shadow: 0 10px 30px -10px rgba(15, 23, 42, 0.08);
+        }
+
+        .glass-panel:hover {
+            border-color: rgba(255, 255, 255, 0.15);
+            box-shadow: 0 15px 35px -5px rgba(0, 0, 0, 0.4);
+        }
+
+        body.light-theme .glass-panel:hover {
+            border-color: rgba(15, 23, 42, 0.15);
+            box-shadow: 0 15px 35px -5px rgba(15, 23, 42, 0.12);
+        }
+
+        /* Header section */
+        header {
+            text-align: center;
+            padding: 4rem 0 2rem 0;
+            position: relative;
+        }
+
+        /* Theme Toggle Button */
+        .theme-toggle-btn {
+            position: absolute;
+            top: 2rem;
+            right: 2rem;
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+            padding: 0.6rem;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 44px;
+            height: 44px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            transition: all 0.2s ease;
+            z-index: 100;
+        }
+
+        .theme-toggle-btn:hover {
+            transform: scale(1.1);
+            border-color: var(--text-primary);
+        }
+
+        .theme-toggle-btn svg {
+            width: 20px;
+            height: 20px;
+            fill: currentColor;
+        }
+
+        .project-tag {
+            display: inline-block;
+            background: linear-gradient(135deg, rgba(99, 102, 241, 0.2), rgba(168, 85, 247, 0.2));
+            border: 1px solid rgba(168, 85, 247, 0.3);
+            color: #d8b4fe;
+            padding: 0.5rem 1.25rem;
+            border-radius: 9999px;
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-bottom: 1.5rem;
+            box-shadow: 0 0 15px rgba(168, 85, 247, 0.1);
+        }
+
+        body.light-theme .project-tag {
+            background: linear-gradient(135deg, rgba(99, 102, 241, 0.1), rgba(168, 85, 247, 0.1));
+            color: #7c3aed;
+            border-color: rgba(124, 58, 237, 0.2);
+        }
+
+        header h1 {
+            font-size: 3rem;
+            background: linear-gradient(135deg, var(--text-primary) 30%, #a5b4fc 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 0.5rem;
+            letter-spacing: -1px;
+            transition: all var(--transition-speed) ease;
+        }
+
+        body.light-theme header h1 {
+            background: linear-gradient(135deg, #0f172a 30%, #4f46e5 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .subtitle {
+            font-size: 1.2rem;
+            color: var(--text-secondary);
+            max-width: 700px;
+            margin: 0.5rem auto 2.5rem auto;
+            font-weight: 300;
+        }
+
+        /* Team grid */
+        .team-grid {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 1.5rem;
+            margin-bottom: 3rem;
+        }
+
+        .team-member {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            padding: 0.75rem 1.5rem;
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            transition: all 0.2s ease;
+        }
+
+        body.light-theme .team-member {
+            background: rgba(15, 23, 42, 0.03);
+            border-color: rgba(15, 23, 42, 0.05);
+        }
+
+        .team-member:hover {
+            background: rgba(255, 255, 255, 0.07);
+            border-color: rgba(255, 255, 255, 0.12);
+            transform: translateY(-2px);
+        }
+
+        body.light-theme .team-member:hover {
+            background: rgba(15, 23, 42, 0.06);
+            border-color: rgba(15, 23, 42, 0.1);
+        }
+
+        .team-member .role-icon {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background-color: var(--color-flutter);
+        }
+        .team-member:nth-child(2) .role-icon { background-color: var(--color-firebase); }
+        .team-member:nth-child(3) .role-icon { background-color: var(--color-aws); }
+        .team-member:nth-child(4) .role-icon { background-color: var(--color-spacy); }
+        .team-member:nth-child(5) .role-icon { background-color: var(--color-tensorflow); }
+
+        /* Navigation Tabs */
+        .tab-navigation {
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+            margin-bottom: 3rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            padding-bottom: 1rem;
+        }
+
+        body.light-theme .tab-navigation {
+            border-bottom-color: rgba(0, 0, 0, 0.05);
+        }
+
+        .tab-btn {
+            background: transparent;
+            border: none;
+            color: var(--text-secondary);
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 1.1rem;
+            font-weight: 500;
+            padding: 0.75rem 1.5rem;
+            cursor: pointer;
+            border-radius: 8px;
+            transition: all var(--transition-speed) ease;
+            position: relative;
+        }
+
+        .tab-btn:hover {
+            color: var(--text-primary);
+            background: rgba(255, 255, 255, 0.03);
+        }
+
+        body.light-theme .tab-btn:hover {
+            background: rgba(0, 0, 0, 0.02);
+        }
+
+        .tab-btn.active {
+            color: #a5b4fc;
+            background: rgba(99, 102, 241, 0.1);
+        }
+
+        body.light-theme .tab-btn.active {
+            color: #4f46e5;
+            background: rgba(79, 70, 229, 0.08);
+        }
+
+        .tab-btn.active::after {
+            content: '';
+            position: absolute;
+            bottom: -1rem;
+            left: 0;
+            width: 100%;
+            height: 2px;
+            background: linear-gradient(90deg, var(--color-flutter), var(--color-aws));
+            border-radius: 2px;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+            animation: fadeIn 0.4s ease-in-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* SVG Architecture Diagram Styles */
+        .arch-svg-container {
+            width: 100%;
+            overflow-x: auto;
+            background: rgba(10, 15, 30, 0.9);
+            border-radius: 12px;
+            padding: 1.5rem;
+            border: 1px solid rgba(255, 255, 255, 0.03);
+            margin-bottom: 2rem;
+            transition: background var(--transition-speed) ease;
+        }
+
+        body.light-theme .arch-svg-container {
+            background: #ffffff;
+            border-color: rgba(0, 0, 0, 0.05);
+            box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.02);
+        }
+
+        .arch-svg {
+            display: block;
+            width: 100%;
+            min-width: 900px;
+            height: auto;
+        }
+
+        /* SVG Node Animations */
+        .node {
+            cursor: pointer;
+            transition: transform 0.3s ease;
+        }
+
+        .node:hover {
+            transform: scale(1.02);
+        }
+
+        .node rect, .node circle {
+            transition: all 0.3s ease;
+        }
+
+        .node:hover rect {
+            fill-opacity: 0.15;
+            stroke-width: 2.5px;
+        }
+
+        body.light-theme .node rect {
+            stroke-width: 1.8px;
+        }
+
+        /* Marching Ants animated pipelines */
+        .flow-line {
+            fill: none;
+            stroke-dasharray: 8, 8;
+            animation: flow 30s linear infinite;
+        }
+
+        @keyframes flow {
+            to {
+                stroke-dashoffset: -1000;
+            }
+        }
+
+        .flow-line-reverse {
+            fill: none;
+            stroke-dasharray: 8, 8;
+            animation: flow-rev 30s linear infinite;
+        }
+
+        @keyframes flow-rev {
+            to {
+                stroke-dashoffset: 1000;
+            }
+        }
+
+        /* Light Theme SVG text overrides */
+        body.light-theme .arch-svg text.track-label {
+            fill: rgba(15, 23, 42, 0.4);
+        }
+
+        body.light-theme .arch-svg line, 
+        body.light-theme .arch-svg path {
+            opacity: 0.85;
+        }
+
+        /* Sidebar Info Panel for Architecture */
+        .arch-details-layout {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 2rem;
+        }
+
+        @media (min-width: 992px) {
+            .arch-details-layout {
+                grid-template-columns: 2.5fr 1fr;
+            }
+        }
+
+        .info-card {
+            background: rgba(15, 23, 42, 0.6);
+            border: 1px dashed rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 1.5rem;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            transition: all var(--transition-speed) ease;
+        }
+
+        body.light-theme .info-card {
+            background: rgba(15, 23, 42, 0.02);
+            border-color: rgba(15, 23, 42, 0.15);
+        }
+
+        .info-card h4 {
+            font-size: 1.25rem;
+            margin-bottom: 0.75rem;
+            color: #a5b4fc;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            transition: color var(--transition-speed) ease;
+        }
+
+        body.light-theme .info-card h4 {
+            color: #4f46e5;
+        }
+
+        .info-card p {
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+            margin-bottom: 1rem;
+        }
+
+        .info-card .tech-tag-pill {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            margin-right: 0.5rem;
+            margin-top: 0.5rem;
+            transition: all var(--transition-speed) ease;
+        }
+
+        body.light-theme .info-card .tech-tag-pill {
+            background: rgba(0, 0, 0, 0.03);
+            border-color: rgba(0, 0, 0, 0.08);
+            color: var(--text-primary);
+        }
+
+        /* Orbit Stack Circle Styles */
+        .orbit-layout {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 3rem;
+            align-items: center;
+        }
+
+        @media (min-width: 768px) {
+            .orbit-layout {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+
+        .orbit-svg-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+            background: rgba(10, 15, 30, 0.4);
+            border-radius: 16px;
+            padding: 1rem;
+            transition: background var(--transition-speed) ease;
+        }
+
+        body.light-theme .orbit-svg-container {
+            background: #ffffff;
+            box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.02);
+            border: 1px solid rgba(0, 0, 0, 0.03);
+        }
+
+        .orbit-svg {
+            width: 100%;
+            max-width: 480px;
+            height: auto;
+        }
+
+        /* Satellites animation */
+        .sat-node {
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .sat-node:hover {
+            transform: scale(1.1);
+            filter: drop-shadow(0 0 8px currentColor);
+        }
+
+        .sat-node circle {
+            transition: all 0.3s ease;
+            fill: #0f172a;
+        }
+
+        body.light-theme .sat-node circle {
+            fill: #ffffff;
+        }
+
+        body.light-theme .sat-node text {
+            fill: #0f172a;
+        }
+
+        .sat-node:hover circle {
+            fill-opacity: 0.25;
+            stroke-width: 3px;
+        }
+
+        .pulse-circle {
+            animation: pulse 3s infinite alternate;
+            transform-origin: center;
+        }
+
+        @keyframes pulse {
+            0% { r: 75px; opacity: 0.8; }
+            100% { r: 85px; opacity: 0.3; }
+        }
+
+        body.light-theme .orbit-svg text[fill="#fff"] {
+            fill: #0f172a;
+        }
+
+        body.light-theme .orbit-svg circle[fill="#1e1b4b"] {
+            fill: #e0e7ff;
+            stroke: #4f46e5;
+        }
+
+        /* Tech Detail Panel alongside Orbit */
+        .orbit-detail-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        .tech-focus-card {
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 2rem;
+            position: relative;
+            overflow: hidden;
+            transition: all var(--transition-speed) ease;
+        }
+
+        body.light-theme .tech-focus-card {
+            background: rgba(0, 0, 0, 0.01);
+        }
+
+        .tech-focus-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 4px;
+            height: 100%;
+            background: var(--color-flutter);
+            transition: background var(--transition-speed) ease;
+        }
+
+        .tech-focus-card.flutter::before { background: var(--color-flutter); }
+        .tech-focus-card.firebase::before { background: var(--color-firebase); }
+        .tech-focus-card.aws::before { background: var(--color-aws); }
+        .tech-focus-card.spacy::before { background: var(--color-spacy); }
+        .tech-focus-card.tensorflow::before { background: var(--color-tensorflow); }
+        .tech-focus-card.docker::before { background: var(--color-docker); }
+
+        .tech-focus-header {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .tech-focus-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #fff;
+        }
+
+        .tech-focus-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+        }
+
+        .tech-focus-subtitle {
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--text-secondary);
+        }
+
+        .tech-focus-body {
+            color: var(--text-secondary);
+            font-size: 1rem;
+            line-height: 1.6;
+        }
+
+        /* Modern Table Style */
+        .table-responsive {
+            width: 100%;
+            overflow-x: auto;
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+        }
+
+        .tech-table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: left;
+            font-size: 0.95rem;
+        }
+
+        .tech-table th {
+            background-color: rgba(15, 23, 42, 0.8);
+            color: var(--text-primary);
+            padding: 1rem 1.5rem;
+            font-family: 'Space Grotesk', sans-serif;
+            font-weight: 600;
+            border-bottom: 1px solid var(--border-color);
+            letter-spacing: 0.5px;
+            transition: all var(--transition-speed) ease;
+        }
+
+        body.light-theme .tech-table th {
+            background-color: rgba(241, 245, 249, 0.9);
+            border-bottom-color: rgba(15, 23, 42, 0.08);
+        }
+
+        .tech-table td {
+            padding: 1.25rem 1.5rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+            color: var(--text-secondary);
+            transition: all var(--transition-speed) ease;
+        }
+
+        body.light-theme .tech-table td {
+            border-bottom-color: rgba(0, 0, 0, 0.04);
+        }
+
+        .tech-table tr:last-child td {
+            border-bottom: none;
+        }
+
+        .tech-table tr:hover td {
+            background-color: rgba(255, 255, 255, 0.01);
+            color: var(--text-primary);
+        }
+
+        body.light-theme .tech-table tr:hover td {
+            background-color: rgba(15, 23, 42, 0.01);
+        }
+
+        .tech-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-weight: 600;
+            font-size: 0.85rem;
+            color: #fff;
+            padding: 0.35rem 0.75rem;
+            border-radius: 6px;
+        }
+
+        .tech-category-badge {
+            display: inline-block;
+            font-size: 0.8rem;
+            padding: 0.2rem 0.5rem;
+            border-radius: 4px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: var(--text-primary);
+            transition: all var(--transition-speed) ease;
+        }
+
+        body.light-theme .tech-category-badge {
+            background: rgba(0, 0, 0, 0.03);
+            border-color: rgba(0, 0, 0, 0.08);
+        }
+
+        /* Abstract/Intro Callout Card */
+        .intro-callout {
+            background: linear-gradient(135deg, rgba(30, 41, 59, 0.4) 0%, rgba(15, 23, 42, 0.4) 100%);
+            border-left: 4px solid var(--color-flutter);
+        }
+
+        body.light-theme .intro-callout {
+            background: linear-gradient(135deg, rgba(255,255,255,0.8) 0%, rgba(241, 245, 249, 0.6) 100%);
+        }
+
+        .intro-callout h3 {
+            font-size: 1.5rem;
+            color: #a5b4fc;
+            margin-bottom: 1rem;
+            transition: color var(--transition-speed) ease;
+        }
+
+        body.light-theme .intro-callout h3 {
+            color: #4f46e5;
+        }
+
+        /* PNG Showcase Section */
+        .image-gallery {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 2rem;
+        }
+
+        @media (min-width: 768px) {
+            .image-gallery {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+
+        .gallery-card {
+            background: rgba(15, 23, 42, 0.4);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            overflow: hidden;
+            transition: all var(--transition-speed) ease;
+        }
+
+        body.light-theme .gallery-card {
+            background: #ffffff;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
+        }
+
+        .gallery-card:hover {
+            border-color: rgba(255, 255, 255, 0.15);
+            transform: translateY(-4px);
+        }
+
+        body.light-theme .gallery-card:hover {
+            border-color: rgba(15, 23, 42, 0.12);
+        }
+
+        .gallery-img-wrapper {
+            width: 100%;
+            height: 320px;
+            overflow: hidden;
+            background-color: #0b0f19;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-bottom: 1px solid var(--border-color);
+            padding: 1rem;
+            transition: background var(--transition-speed) ease;
+        }
+
+        body.light-theme .gallery-img-wrapper {
+            background-color: #f1f5f9;
+        }
+
+        .gallery-img {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+            border-radius: 8px;
+            transition: transform 0.5s ease;
+        }
+
+        .gallery-card:hover .gallery-img {
+            transform: scale(1.03);
+        }
+
+        .gallery-info {
+            padding: 1.25rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .gallery-title h4 {
+            font-size: 1.1rem;
+            margin-bottom: 0.25rem;
+        }
+
+        .gallery-title p {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+        }
+
+        .download-btn {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: var(--text-primary);
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        body.light-theme .download-btn {
+            background: rgba(0, 0, 0, 0.03);
+            border-color: rgba(0, 0, 0, 0.08);
+        }
+
+        .download-btn:hover {
+            background: var(--text-primary);
+            color: var(--bg-dark);
+            border-color: var(--text-primary);
+        }
+
+        body.light-theme .download-btn:hover {
+            background: #0f172a;
+            color: #ffffff;
+            border-color: #0f172a;
+        }
+
+        footer {
+            text-align: center;
+            padding: 4rem 0;
+            color: var(--text-secondary);
+            font-size: 0.85rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+            margin-top: 4rem;
+        }
+
+        body.light-theme footer {
+            border-top-color: rgba(0, 0, 0, 0.05);
+        }
+
+        footer p {
+            margin-bottom: 0.5rem;
+        }
+    </style>
+</head>
+<body class="light-theme"> <!-- Defaulting to light theme to perfectly match the white background diagrams -->
+
+    <div class="container">
+        
+        <!-- Theme Toggle Button -->
+        <button class="theme-toggle-btn" onclick="toggleTheme()" aria-label="Toggle contrast mode">
+            <!-- Sun & Moon SVGs -->
+            <svg id="theme-icon" viewBox="0 0 24 24">
+                <!-- Moon icon (when in light theme) -->
+                <path id="moon-path" d="M12.3 22h-.1c-5.5 0-10-4.5-10-10 0-4.8 3.5-8.9 8.2-9.8.5-.1 1 .3.9.8-.1.5-.5.9-1 .8-3.7.4-6.5 3.5-6.5 7.2 0 4.1 3.4 7.5 7.5 7.5 3.7 0 6.8-2.8 7.2-6.5-.1-.5.3-1 .8-1 .5-.1.9.3.8.9-.9 4.7-5 8.2-9.8 8.2z"/>
+                <!-- Sun icon (will show in dark theme) -->
+                <path id="sun-path" style="display:none;" d="M12 7c-2.76 0-5 2.24-5 5s2.24 5 5 5 5-2.24 5-5-2.24-5-5-5zM2 13h2c.55 0 1-.45 1-1s-.45-1-1-1H2c-.55 0-1 .45-1 1s.45 1 1 1zm18 0h2c.55 0 1-.45 1-1s-.45-1-1-1h-2c-.55 0-1 .45-1 1s.45 1 1 1zM11 2v2c0 .55.45 1 1 1s1-.45 1-1V2c0-.55-.45-1-1-1s-1 .45-1 1zm0 18v2c0 .55.45 1 1 1s1-.45 1-1v-2c0-.55-.45-1-1-1s-1 .45-1 1zM5.99 4.58c-.39-.39-1.03-.39-1.41 0s-.39 1.03 0 1.41l1.06 1.06c.39.39 1.03.39 1.41 0s.39-1.03 0-1.41L5.99 4.58zm12.37 12.37c-.39-.39-1.03-.39-1.41 0s-.39 1.03 0 1.41l1.06 1.06c.39.39 1.03.39 1.41 0s.39-1.03 0-1.41l-1.06-1.06zm1.06-12.37c-.39-.39-1.03-.39-1.41 0l-1.06 1.06c-.39.39-.39 1.03 0 1.41s1.03.39 1.41 0l1.06-1.06c.39-.38.39-1.02 0-1.41zM5.99 16.95l-1.06 1.06c-.39.39-.39 1.03 0 1.41s1.03.39 1.41 0l1.06-1.06c.39-.39.39-1.03 0-1.41s-1.02-.39-1.41 0z"/>
+            </svg>
+        </button>
+        
+        <!-- Header -->
+        <header>
+            <div class="project-tag">F25CS124</div>
+            <h1>HASSLE-FREE</h1>
+            <p class="subtitle">AI-Powered Career Enhancement & Recruitment Platform</p>
+            
+            <div class="team-grid">
+                <div class="team-member">
+                    <span class="role-icon"></span>
+                    M. Abdullah Afzal
+                </div>
+                <div class="team-member">
+                    <span class="role-icon"></span>
+                    Waleed Tariq
+                </div>
+                <div class="team-member">
+                    <span class="role-icon"></span>
+                    Haris Naeem
+                </div>
+                <div class="team-member">
+                    <span class="role-icon"></span>
+                    Ali Hassan Pervaiz
+                </div>
+                <div class="team-member">
+                    <span class="role-icon"></span>
+                    Advisor: Mr. Muneeb Ali Muzaffar
+                </div>
+            </div>
+        </header>
+
+        <!-- Executive Summary/Abstract -->
+        <section class="glass-panel intro-callout">
+            <h3>Abstract & Ecosystem Overview</h3>
+            <p>
+                <strong>HASSLE-FREE</strong> is an intelligent cross-platform recruitment and career enhancement ecosystem designed to transform the interaction between job seekers and employers through AI-driven automation. By integrating advanced Natural Language Processing (NLP), machine learning techniques, AI-based mock interviews, and semantic job matching algorithms into a single unified platform, it streamlines screening processes, minimizes subjective bias, and enhances overall employability.
+            </p>
+        </section>
+
+        <!-- Navigation Tabs -->
+        <nav class="tab-navigation">
+            <button class="tab-btn active" id="tab-btn-arch" onclick="switchTab('arch')">Technical Architecture</button>
+            <button class="tab-btn" id="tab-btn-orbit" onclick="switchTab('orbit')">Interactive Tech Stack</button>
+            <button class="tab-btn" id="tab-btn-table" onclick="switchTab('table')">Technologies Table</button>
+            <button class="tab-btn" id="tab-btn-gallery" onclick="switchTab('gallery')">Generated Asset Diagrams</button>
+        </nav>
+
+        <!-- Tab 1: Technical Architecture -->
+        <div class="tab-content active" id="tab-arch">
+            <div class="glass-panel">
+                <div class="arch-details-layout">
+                    
+                    <div>
+                        <h3 style="margin-bottom: 1rem;">Three-Tier Cloud-Native Architecture</h3>
+                        <p style="color: var(--text-secondary); margin-bottom: 1.5rem;">
+                            Click on any node in the architecture diagram to inspect its integration role, tech stack, and details.
+                        </p>
+                        
+                        <!-- Interactive SVG Diagram -->
+                        <div class="arch-svg-container">
+                            <svg class="arch-svg" viewBox="0 0 1000 500" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <!-- Define Gradients and Filters -->
+                                <defs>
+                                    <linearGradient id="flutterGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                                        <stop offset="0%" stop-color="#0284c7" stop-opacity="0.2"/>
+                                        <stop offset="100%" stop-color="#0369a1" stop-opacity="0.8"/>
+                                    </linearGradient>
+                                    <linearGradient id="firebaseGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                                        <stop offset="0%" stop-color="#f59e0b" stop-opacity="0.2"/>
+                                        <stop offset="100%" stop-color="#b45309" stop-opacity="0.8"/>
+                                    </linearGradient>
+                                    <linearGradient id="awsGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                                        <stop offset="0%" stop-color="#ec4899" stop-opacity="0.2"/>
+                                        <stop offset="100%" stop-color="#be185d" stop-opacity="0.8"/>
+                                    </linearGradient>
+                                    <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+                                        <feGaussianBlur stdDeviation="8" result="blur" />
+                                        <feComposite in="SourceGraphic" in2="blur" operator="over" />
+                                    </filter>
+                                </defs>
+
+                                <!-- Background Tracks -->
+                                <rect x="10" y="20" width="980" height="120" rx="12" fill="rgba(120,120,120,0.02)" stroke="var(--border-color)" stroke-width="1"/>
+                                <rect x="10" y="180" width="980" height="130" rx="12" fill="rgba(120,120,120,0.02)" stroke="var(--border-color)" stroke-width="1"/>
+                                <rect x="10" y="350" width="980" height="135" rx="12" fill="rgba(120,120,120,0.02)" stroke="var(--border-color)" stroke-width="1"/>
+
+                                <!-- Track Labels -->
+                                <text x="30" y="45" class="track-label" fill="rgba(255,255,255,0.3)" font-family="Space Grotesk" font-size="12" font-weight="600" letter-spacing="1">TIER 1: PRESENTATION & CLIENTS</text>
+                                <text x="30" y="205" class="track-label" fill="rgba(255,255,255,0.3)" font-family="Space Grotesk" font-size="12" font-weight="600" letter-spacing="1">TIER 2: DATA & BACKEND SERVICES</text>
+                                <text x="30" y="375" class="track-label" fill="rgba(255,255,255,0.3)" font-family="Space Grotesk" font-size="12" font-weight="600" letter-spacing="1">TIER 3: CLOUD AI & COMPUTATIONAL SERVICES</text>
+
+                                <!-- Animated Flow Paths (Marching Ants) -->
+                                <!-- Client -> Firebase Auth -->
+                                <path d="M 230 110 L 230 210" class="flow-line" stroke="var(--color-flutter)" stroke-width="2"/>
+                                <!-- Client -> Storage -->
+                                <path d="M 500 110 L 500 210" class="flow-line" stroke="var(--color-flutter)" stroke-width="2"/>
+                                <!-- Client -> DB -->
+                                <path d="M 770 110 L 770 210" class="flow-line" stroke="var(--color-flutter)" stroke-width="2"/>
+
+                                <!-- Firebase Storage -> AWS Lambda (Trigger) -->
+                                <path d="M 500 270 L 500 375" class="flow-line" stroke="var(--color-firebase)" stroke-width="2"/>
+                                <!-- AWS Lambda -> Firebase DB (Save Results) -->
+                                <path d="M 540 375 L 750 270" class="flow-line" stroke="var(--color-aws)" stroke-width="2"/>
+                                <!-- Firebase DB -> Client (Real-time sync) -->
+                                <path d="M 790 210 L 790 110" class="flow-line-reverse" stroke="var(--color-firebase)" stroke-width="2"/>
+
+                                <!-- NODES -->
+                                
+                                <!-- Tier 1: Flutter Client -->
+                                <g class="node" onclick="showArchInfo('flutter')">
+                                    <rect x="180" y="55" width="640" height="55" rx="8" fill="url(#flutterGrad)" stroke="var(--color-flutter)" stroke-width="1.5" filter="url(#glow)"/>
+                                    <text x="500" y="87" fill="#fff" font-family="Space Grotesk" font-size="16" font-weight="600" text-anchor="middle">Flutter Cross-Platform Client Application (Web / Android / iOS)</text>
+                                </g>
+
+                                <!-- Tier 2: Firebase Node 1 - Auth -->
+                                <g class="node" onclick="showArchInfo('fb-auth')">
+                                    <rect x="150" y="210" width="180" height="60" rx="8" fill="url(#firebaseGrad)" stroke="var(--color-firebase)" stroke-width="1.5"/>
+                                    <text x="240" y="240" fill="#fff" font-family="Space Grotesk" font-size="14" font-weight="600" text-anchor="middle">Firebase Auth</text>
+                                    <text x="240" y="255" fill="rgba(255,255,255,0.7)" font-family="Inter" font-size="10" text-anchor="middle">Security & Users</text>
+                                </g>
+
+                                <!-- Tier 2: Firebase Node 2 - Storage -->
+                                <g class="node" onclick="showArchInfo('fb-storage')">
+                                    <rect x="400" y="210" width="200" height="60" rx="8" fill="url(#firebaseGrad)" stroke="var(--color-firebase)" stroke-width="1.5"/>
+                                    <text x="500" y="240" fill="#fff" font-family="Space Grotesk" font-size="14" font-weight="600" text-anchor="middle">Firebase Storage</text>
+                                    <text x="500" y="255" fill="rgba(255,255,255,0.7)" font-family="Inter" font-size="10" text-anchor="middle">Resumes & Audios</text>
+                                </g>
+
+                                <!-- Tier 2: Firebase Node 3 - Real-time Database -->
+                                <g class="node" onclick="showArchInfo('fb-db')">
+                                    <rect x="670" y="210" width="200" height="60" rx="8" fill="url(#firebaseGrad)" stroke="var(--color-firebase)" stroke-width="1.5"/>
+                                    <text x="770" y="240" fill="#fff" font-family="Space Grotesk" font-size="14" font-weight="600" text-anchor="middle">Firebase Database</text>
+                                    <text x="770" y="255" fill="rgba(255,255,255,0.7)" font-family="Inter" font-size="10" text-anchor="middle">Real-time JSON sync</text>
+                                </g>
+
+                                <!-- Tier 3: AI Component 1 - spaCy NLP -->
+                                <g class="node" onclick="showArchInfo('ai-spacy')">
+                                    <rect x="120" y="375" width="220" height="70" rx="8" fill="url(#awsGrad)" stroke="var(--color-aws)" stroke-width="1.5"/>
+                                    <text x="230" y="405" fill="#fff" font-family="Space Grotesk" font-size="14" font-weight="600" text-anchor="middle">spaCy Resume Parser</text>
+                                    <text x="230" y="420" fill="rgba(255,255,255,0.7)" font-family="Inter" font-size="10" text-anchor="middle">NLP NER Skill Extraction</text>
+                                    <text x="230" y="433" fill="var(--color-spacy)" font-family="Fira Code" font-size="9" text-anchor="middle">AWS Lambda Microservice</text>
+                                </g>
+
+                                <!-- Tier 3: AI Component 2 - TensorFlow & Similarity -->
+                                <g class="node" onclick="showArchInfo('ai-tf')">
+                                    <rect x="380" y="375" width="240" height="70" rx="8" fill="url(#awsGrad)" stroke="var(--color-aws)" stroke-width="1.5"/>
+                                    <text x="500" y="405" fill="#fff" font-family="Space Grotesk" font-size="14" font-weight="600" text-anchor="middle">TensorFlow Matcher</text>
+                                    <text x="500" y="420" fill="rgba(255,255,255,0.7)" font-family="Inter" font-size="10" text-anchor="middle">TF-IDF / Cosine Recs & Scoring</text>
+                                    <text x="500" y="433" fill="var(--color-tensorflow)" font-family="Fira Code" font-size="9" text-anchor="middle">AWS Lambda Serverless</text>
+                                </g>
+
+                                <!-- Tier 3: AI Component 3 - Speech-to-Text -->
+                                <g class="node" onclick="showArchInfo('ai-speech')">
+                                    <rect x="660" y="375" width="220" height="70" rx="8" fill="url(#awsGrad)" stroke="var(--color-aws)" stroke-width="1.5"/>
+                                    <text x="770" y="405" fill="#fff" font-family="Space Grotesk" font-size="14" font-weight="600" text-anchor="middle">Google Speech-to-Text</text>
+                                    <text x="770" y="420" fill="rgba(255,255,255,0.7)" font-family="Inter" font-size="10" text-anchor="middle">AI Mock Interview Audio Analysis</text>
+                                    <text x="770" y="433" fill="#3b82f6" font-family="Fira Code" font-size="9" text-anchor="middle">Cognitive Speech API</text>
+                                </g>
+                            </svg>
+                        </div>
+                    </div>
+                    
+                    <!-- Detail Display Sidebar -->
+                    <div style="margin-top: 1.5rem;">
+                        <div class="info-card" id="arch-details-card">
+                            <h4 id="arch-detail-title"><span style="color: var(--color-flutter);">●</span> Select a Component</h4>
+                            <p id="arch-detail-desc">Click on any module or service node inside the cloud architecture diagram to view its functional description, backend communication flow, and integration specifics.</p>
+                            <div id="arch-detail-tags">
+                                <span class="tech-tag-pill">3-Tier Cloud</span>
+                                <span class="tech-tag-pill">Interactive</span>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+
+        <!-- Tab 2: Interactive Tech Stack Orbit -->
+        <div class="tab-content" id="tab-orbit">
+            <div class="glass-panel">
+                <div class="orbit-layout">
+                    
+                    <!-- SVG Orbit Circle representation -->
+                    <div class="orbit-svg-container">
+                        <svg class="orbit-svg" viewBox="0 0 800 600" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <!-- Definitions -->
+                            <defs>
+                                <radialGradient id="centerGlow" cx="50%" cy="50%" r="50%">
+                                    <stop offset="0%" stop-color="#6366f1" stop-opacity="0.15"/>
+                                    <stop offset="100%" stop-color="transparent" stop-opacity="0"/>
+                                </radialGradient>
+                            </defs>
+                            
+                            <!-- Glowing background -->
+                            <circle cx="400" cy="300" r="280" fill="url(#centerGlow)" />
+                            
+                            <!-- Orbit Rings -->
+                            <circle cx="400" cy="300" r="200" stroke="rgba(120,120,120,0.15)" stroke-width="1.5" stroke-dasharray="4 8"/>
+                            <circle cx="400" cy="300" r="120" stroke="rgba(120,120,120,0.08)" stroke-width="1"/>
+                            
+                            <!-- Connector Lines from Center Core to Satellites -->
+                            <line x1="400" y1="300" x2="600" y2="300" stroke="rgba(2, 132, 199, 0.2)" stroke-width="2"/>
+                            <line x1="400" y1="300" x2="500" y2="473" stroke="rgba(245, 158, 11, 0.2)" stroke-width="2"/>
+                            <line x1="400" y1="300" x2="300" y2="473" stroke="rgba(236, 72, 153, 0.2)" stroke-width="2"/>
+                            <line x1="400" y1="300" x2="200" y2="300" stroke="rgba(16, 185, 129, 0.2)" stroke-width="2"/>
+                            <line x1="400" y1="300" x2="300" y2="127" stroke="rgba(255, 107, 43, 0.2)" stroke-width="2"/>
+                            <line x1="400" y1="300" x2="500" y2="127" stroke="rgba(37, 99, 243, 0.2)" stroke-width="2"/>
+
+                            <!-- Center Core Node -->
+                            <circle cx="400" cy="300" r="80" class="pulse-circle" fill="rgba(99, 102, 241, 0.08)" stroke="rgba(99, 102, 241, 0.3)" stroke-width="2" />
+                            <circle cx="400" cy="300" r="60" fill="#1e1b4b" stroke="rgba(165, 180, 252, 0.6)" stroke-width="2"/>
+                            <text x="400" y="295" fill="#fff" font-family="Space Grotesk" font-size="14" font-weight="700" text-anchor="middle" letter-spacing="1">HASSLE</text>
+                            <text x="400" y="315" fill="rgba(165, 180, 252, 0.8)" font-family="Space Grotesk" font-size="12" font-weight="500" text-anchor="middle" letter-spacing="2">FREE CORE</text>
+
+                            <!-- Orbiting Tech Satellites -->
+                            <!-- Node 1: Flutter (600, 300) -->
+                            <g class="sat-node" style="color: var(--color-flutter);" onmouseover="focusTech('flutter')" onclick="focusTech('flutter')">
+                                <circle cx="600" cy="300" r="40" stroke="var(--color-flutter)" stroke-width="2"/>
+                                <text x="600" y="295" font-family="Space Grotesk" font-size="11" font-weight="600" text-anchor="middle">Flutter</text>
+                                <text x="600" y="310" fill="var(--color-flutter)" font-family="Inter" font-size="9" text-anchor="middle">Frontend</text>
+                            </g>
+
+                            <!-- Node 2: Firebase (500, 473) -->
+                            <g class="sat-node" style="color: var(--color-firebase);" onmouseover="focusTech('firebase')" onclick="focusTech('firebase')">
+                                <circle cx="500" cy="473" r="40" stroke="var(--color-firebase)" stroke-width="2"/>
+                                <text x="500" y="468" font-family="Space Grotesk" font-size="11" font-weight="600" text-anchor="middle">Firebase</text>
+                                <text x="500" y="483" fill="var(--color-firebase)" font-family="Inter" font-size="9" text-anchor="middle">Database</text>
+                            </g>
+
+                            <!-- Node 3: AWS Lambda (300, 473) -->
+                            <g class="sat-node" style="color: var(--color-aws);" onmouseover="focusTech('aws')" onclick="focusTech('aws')">
+                                <circle cx="300" cy="473" r="40" stroke="var(--color-aws)" stroke-width="2"/>
+                                <text x="300" y="468" font-family="Space Grotesk" font-size="10" font-weight="600" text-anchor="middle">AWS Lambda</text>
+                                <text x="300" y="483" fill="var(--color-aws)" font-family="Inter" font-size="9" text-anchor="middle">Cloud AI</text>
+                            </g>
+
+                            <!-- Node 4: spaCy NLP (200, 300) -->
+                            <g class="sat-node" style="color: var(--color-spacy);" onmouseover="focusTech('spacy')" onclick="focusTech('spacy')">
+                                <circle cx="200" cy="300" r="40" stroke="var(--color-spacy)" stroke-width="2"/>
+                                <text x="200" y="295" font-family="Space Grotesk" font-size="11" font-weight="600" text-anchor="middle">spaCy</text>
+                                <text x="200" y="310" fill="var(--color-spacy)" font-family="Inter" font-size="9" text-anchor="middle">NLP Parser</text>
+                            </g>
+
+                            <!-- Node 5: TensorFlow (300, 127) -->
+                            <g class="sat-node" style="color: var(--color-tensorflow);" onmouseover="focusTech('tensorflow')" onclick="focusTech('tensorflow')">
+                                <circle cx="300" cy="127" r="40" stroke="var(--color-tensorflow)" stroke-width="2"/>
+                                <text x="300" y="122" font-family="Space Grotesk" font-size="11" font-weight="600" text-anchor="middle">TensorFlow</text>
+                                <text x="300" y="137" fill="var(--color-tensorflow)" font-family="Inter" font-size="9" text-anchor="middle">ML Models</text>
+                            </g>
+
+                            <!-- Node 6: Docker (500, 127) -->
+                            <g class="sat-node" style="color: var(--color-docker);" onmouseover="focusTech('docker')" onclick="focusTech('docker')">
+                                <circle cx="500" cy="127" r="40" stroke="var(--color-docker)" stroke-width="2"/>
+                                <text x="500" y="122" font-family="Space Grotesk" font-size="11" font-weight="600" text-anchor="middle">Docker</text>
+                                <text x="500" y="137" fill="var(--color-docker)" font-family="Inter" font-size="9" text-anchor="middle">Containers</text>
+                            </g>
+                        </svg>
+                    </div>
+
+                    <!-- Orbit detail description panels -->
+                    <div class="orbit-detail-panel">
+                        <h3 style="margin-bottom: 0.5rem;">Circular Core Stack</h3>
+                        <p style="color: var(--text-secondary); margin-bottom: 1rem;">
+                            Hover over or click any of the satellite nodes orbiting the core to see the details of that technology's specific role in HASSLE-FREE.
+                        </p>
+                        
+                        <div class="tech-focus-card flutter" id="tech-focus-card">
+                            <div class="tech-focus-header">
+                                <div class="tech-focus-icon" id="tech-focus-icon" style="background-color: var(--color-flutter);">F</div>
+                                <div>
+                                    <div class="tech-focus-title" id="tech-focus-title">Flutter</div>
+                                    <div class="tech-focus-subtitle" id="tech-focus-subtitle">Frontend Client Framework</div>
+                                </div>
+                            </div>
+                            <div class="tech-focus-body" id="tech-focus-body">
+                                Serves as the cross-platform application interface supporting Android, iOS, and Web. Empowers both job seekers (profile building, skill assessment, feedback-driven mock interviews) and employers (candidate metrics, application screening, and shortlisting dashboards).
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+
+        <!-- Tab 3: Technologies Table -->
+        <div class="tab-content" id="tab-table">
+            <div class="glass-panel">
+                <h3 style="margin-bottom: 1.5rem;">Key Technologies Matrix</h3>
+                <div class="table-responsive">
+                    <table class="tech-table">
+                        <thead>
+                            <tr>
+                                <th>Technology</th>
+                                <th>Category</th>
+                                <th>Primary Role in HASSLE-FREE</th>
+                                <th>Key Features & Deployment</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>
+                                    <span class="tech-badge" style="background: rgba(2, 132, 199, 0.15); border: 1px solid var(--color-flutter); color: var(--color-flutter);">
+                                        Flutter
+                                    </span>
+                                </td>
+                                <td><span class="tech-category-badge">Frontend UI</span></td>
+                                <td>Cross-platform user application interface (Android, iOS, Web)</td>
+                                <td>Responsive dashboards, real-time feedback UI, audio recorder integration</td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <span class="tech-badge" style="background: rgba(245, 158, 11, 0.15); border: 1px solid var(--color-firebase); color: var(--color-firebase);">
+                                        Firebase
+                                    </span>
+                                </td>
+                                <td><span class="tech-category-badge">BaaS Backend</span></td>
+                                <td>User authentication, storage for resumes/audios, real-time database</td>
+                                <td>Real-time synchronization, OAuth, secure cloud buckets, JSON database</td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <span class="tech-badge" style="background: rgba(236, 72, 153, 0.15); border: 1px solid var(--color-aws); color: var(--color-aws);">
+                                        AWS Lambda
+                                    </span>
+                                </td>
+                                <td><span class="tech-category-badge">Serverless Computing</span></td>
+                                <td>Hosts serverless computational AI pipelines & Python APIs</td>
+                                <td>Scales automatically, cost-efficient, hosts parsed resume extraction & ML scoring APIs</td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <span class="tech-badge" style="background: rgba(16, 185, 129, 0.15); border: 1px solid var(--color-spacy); color: var(--color-spacy);">
+                                        spaCy NLP
+                                    </span>
+                                </td>
+                                <td><span class="tech-category-badge">AI / Natural Language</span></td>
+                                <td>Extracts skills, work history, and educational details from uploaded resumes</td>
+                                <td>Named Entity Recognition (NER), custom pipeline trained for resume token processing</td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <span class="tech-badge" style="background: rgba(255, 107, 43, 0.15); border: 1px solid var(--color-tensorflow); color: var(--color-tensorflow);">
+                                        TensorFlow
+                                    </span>
+                                </td>
+                                <td><span class="tech-category-badge">Machine Learning</span></td>
+                                <td>Job recommendation engine and algorithmic candidate scoring models</td>
+                                <td>Semantic similarity computations, cosine similarity, multi-variable scoring model</td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <span class="tech-badge" style="background: rgba(37, 99, 243, 0.15); border: 1px solid var(--color-docker); color: var(--color-docker);">
+                                        Docker
+                                    </span>
+                                </td>
+                                <td><span class="tech-category-badge">DevOps Container</span></td>
+                                <td>Ensures local environment parity and isolates Python AI runtimes</td>
+                                <td>Dockerfiles for backend, isolates system packages, ensures identical build runs</td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <span class="tech-badge" style="background: rgba(239, 68, 68, 0.15); border: 1px solid var(--color-git); color: var(--color-git);">
+                                        Git & Github
+                                    </span>
+                                </td>
+                                <td><span class="tech-category-badge">CI / CD</span></td>
+                                <td>Source control management and continuous automated workflows</td>
+                                <td>GitHub Actions builds, unit tests automation, and production deployment scripts</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tab 4: Generated Image Showcase -->
+        <div class="tab-content" id="tab-gallery">
+            <div class="glass-panel">
+                <h3 style="margin-bottom: 1.5rem;">Generated Visual Diagram Assets</h3>
+                <p style="color: var(--text-secondary); margin-bottom: 2rem;">
+                    These high-fidelity design assets are generated in a clean, minimalist <strong>white background</strong> for reports, documentation, papers, and slide decks.
+                </p>
+                
+                <div class="image-gallery">
+                    <!-- Card 1 -->
+                    <div class="gallery-card">
+                        <div class="gallery-img-wrapper">
+                            <img src="./assets/images/technical_architecture.png" alt="HASSLE-FREE Technical Architecture" class="gallery-img">
+                        </div>
+                        <div class="gallery-info">
+                            <div class="gallery-title">
+                                <h4>Technical Architecture</h4>
+                                <p>3-Tier cloud architecture diagram</p>
+                            </div>
+                            <a href="./assets/images/technical_architecture.png" download="technical_architecture.png" class="download-btn">Save PNG</a>
+                        </div>
+                    </div>
+                    <!-- Card 2 -->
+                    <div class="gallery-card">
+                        <div class="gallery-img-wrapper">
+                            <img src="./assets/images/key_technologies_circle.png" alt="HASSLE-FREE Tech Stack Orbit" class="gallery-img">
+                        </div>
+                        <div class="gallery-info">
+                            <div class="gallery-title">
+                                <h4>Key Technologies Orbit</h4>
+                                <p>Circular stack diagram</p>
+                            </div>
+                            <a href="./assets/images/key_technologies_circle.png" download="key_technologies_circle.png" class="download-btn">Save PNG</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <footer>
+            <p>HASSLE-FREE Ecosystem • AI-Powered Career Enhancement & Recruitment Platform</p>
+            <p style="font-size: 0.75rem; color: rgba(120,120,120,0.4);">Developed as an advanced cross-platform solution (F25CS124)</p>
+        </footer>
+
+    </div>
+
+    <!-- Interactive Logic Script -->
+    <script>
+        // Theme Toggle Logic
+        function toggleTheme() {
+            const body = document.body;
+            const sunPath = document.getElementById('sun-path');
+            const moonPath = document.getElementById('moon-path');
+            
+            if (body.classList.contains('light-theme')) {
+                body.classList.remove('light-theme');
+                sunPath.style.display = 'block';
+                moonPath.style.display = 'none';
+            } else {
+                body.classList.add('light-theme');
+                sunPath.style.display = 'none';
+                moonPath.style.display = 'block';
+            }
+        }
+
+        // Navigation Tabs Toggle
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.remove('active');
+            });
+            
+            document.getElementById(`tab-btn-${tabId}`).classList.add('active');
+            document.getElementById(`tab-${tabId}`).classList.add('active');
+        }
+
+        // Architecture Node Info Data
+        const archData = {
+            'flutter': {
+                title: 'Flutter Presentation Layer',
+                color: 'var(--color-flutter)',
+                desc: 'A unified frontend framework for Android, iOS, and Web. Features intuitive resume upload forms, dynamic mock interview dashboards with speech recorders, real-time job matching recommendation screens, and structured dashboard analytics for recruiter tracking.',
+                tags: ['Frontend UI', 'Android/iOS/Web', 'Dart']
+            },
+            'fb-auth': {
+                title: 'Firebase Authentication',
+                color: 'var(--color-firebase)',
+                desc: 'Secures candidate and employer logins. Manages registration, multi-factor authorization profiles, and access controls for candidate profiles versus employer recruiting interfaces.',
+                tags: ['Security', 'OAuth', 'RBAC']
+            },
+            'fb-storage': {
+                title: 'Firebase Cloud Storage',
+                color: 'var(--color-firebase)',
+                desc: 'Hosts unstructured binaries such as raw PDF/Word resumes uploaded by applicants, and raw WAV/MP3 audio logs captured during AI simulated mock interviews.',
+                tags: ['Object Storage', 'Resume Files', 'Audio Records']
+            },
+            'fb-db': {
+                title: 'Firebase Real-time Database',
+                color: 'var(--color-firebase)',
+                desc: 'A real-time synced JSON database storing candidate scores, assessment badges, application tracking progress, and job list structures, reflecting UI updates instantly to users.',
+                tags: ['NoSQL Database', 'JSON', 'Live Sync']
+            },
+            'ai-spacy': {
+                title: 'spaCy NLP Engine',
+                color: 'var(--color-aws)',
+                desc: 'Custom-trained Python Named Entity Recognition (NER) pipeline executing inside AWS Lambda. Parses PDF/Text resumes to dynamically isolate core skills, academic degrees, duration of experience, and contact details.',
+                tags: ['Natural Language Processing', 'Resume Parser', 'Entity Extraction']
+            },
+            'ai-tf': {
+                title: 'TensorFlow Recommendation Engine',
+                color: 'var(--color-aws)',
+                desc: 'An automated candidate matching and scoring module. Leverages mathematical vector similarities (TF-IDF & Cosine Similarity) along with weights on skills, assessments, and profile metrics to recommend optimal jobs.',
+                tags: ['Machine Learning', 'Recommendation Engine', 'Scoring & Similarity']
+            },
+            'ai-speech': {
+                title: 'Google Speech-to-Text Integration',
+                color: 'var(--color-aws)',
+                desc: 'Converts mock interview audio responses uploaded by job seekers into highly accurate transcripts, enabling NLP modules to analyze candidate response quality, speech metrics, and provide constructive score feedback.',
+                tags: ['Cognitive Services', 'Audio Transcriber', 'API Integration']
+            }
+        };
+
+        function showArchInfo(componentKey) {
+            const data = archData[componentKey];
+            if (!data) return;
+            
+            const card = document.getElementById('arch-details-card');
+            
+            // Generate tags HTML
+            let tagsHtml = '';
+            data.tags.forEach(t => {
+                tagsHtml += `<span class="tech-tag-pill">${t}</span>`;
+            });
+            
+            // Set details with animation
+            card.style.opacity = 0;
+            setTimeout(() => {
+                document.getElementById('arch-detail-title').innerHTML = `<span style="color: ${data.color}">●</span> ${data.title}`;
+                document.getElementById('arch-detail-desc').innerText = data.desc;
+                document.getElementById('arch-detail-tags').innerHTML = tagsHtml;
+                card.style.opacity = 1;
+            }, 150);
+        }
+
+        // Tech Satellites Info Data
+        const techData = {
+            'flutter': {
+                title: 'Flutter UI Client',
+                subtitle: 'Frontend Framework (Dart)',
+                color: 'var(--color-flutter)',
+                char: 'F',
+                desc: 'Serves as the cross-platform application interface supporting Android, iOS, and Web. Empowers both job seekers (profile building, skill assessment, feedback-driven mock interviews) and employers (candidate metrics, application screening, and shortlisting dashboards).'
+            },
+            'firebase': {
+                title: 'Google Firebase',
+                subtitle: 'Backend services & storage',
+                color: 'var(--color-firebase)',
+                char: 'Fb',
+                desc: 'Acts as the reactive datastore and application shell. Provides Firebase Auth for credential security, Firebase Cloud Storage to house uploaded resumes and interview audio logs, and Real-Time JSON Databases to synchronize instant state changes.'
+            },
+            'aws': {
+                title: 'AWS Lambda',
+                subtitle: 'Serverless Computational Core',
+                color: 'var(--color-aws)',
+                char: 'λ',
+                desc: 'Hosts serverless computational AI pipelines & Python APIs. Operates on a pay-as-you-go microservices structure to execute heavy parsing (spaCy) and recommendation models (TensorFlow/similarity models) instantly on-demand.'
+            },
+            'spacy': {
+                title: 'spaCy NLP',
+                subtitle: 'Natural Language processing',
+                color: 'var(--color-spacy)',
+                char: 'S',
+                desc: 'A robust NLP library used to write the resume parsing microservice. Extracts tokenized data structures from resumes, capturing education layers, tech stacks, and total years of industry experience from raw text documents.'
+            },
+            'tensorflow': {
+                title: 'TensorFlow',
+                subtitle: 'Machine learning & similarities',
+                color: 'var(--color-tensorflow)',
+                char: 'Tf',
+                desc: 'Powers the matching models. Trains recommendation weights and integrates TF-IDF/Cosine Similarity processes to calculate proximity scores between user experience vectors and job role criteria.'
+            },
+            'docker': {
+                title: 'Docker Containers',
+                subtitle: 'DevOps & parity virtualization',
+                color: 'var(--color-docker)',
+                char: 'D',
+                desc: 'Enforces system configuration parity. Packages the Python microservices (spaCy, TensorFlow dependencies) inside Docker files to guarantee exact version outputs across developer environments and AWS Lambda deployments.'
+            }
+        };
+
+        function focusTech(techKey) {
+            const data = techData[techKey];
+            if (!data) return;
+            
+            const card = document.getElementById('tech-focus-card');
+            
+            // Smoothly swap class for border highlight color
+            card.className = `tech-focus-card ${techKey}`;
+            
+            // Set text & styles
+            document.getElementById('tech-focus-icon').innerText = data.char;
+            document.getElementById('tech-focus-icon').style.backgroundColor = data.color;
+            document.getElementById('tech-focus-title').innerText = data.title;
+            document.getElementById('tech-focus-subtitle').innerText = data.subtitle;
+            document.getElementById('tech-focus-body').innerText = data.desc;
+        }
+    </script>
+</body>
+</html>
