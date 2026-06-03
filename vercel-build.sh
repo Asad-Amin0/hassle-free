@@ -2,8 +2,8 @@
 
 # 1. Install Flutter
 if [ ! -d "flutter" ]; then
-  echo "Cloning Flutter stable branch..."
-  git clone https://github.com/flutter/flutter.git -b stable --depth 1
+  echo "Cloning Flutter version 3.41.4..."
+  git clone https://github.com/flutter/flutter.git -b 3.41.4 --depth 1
 fi
 
 # 2. Add Flutter to PATH
