@@ -6,7 +6,7 @@ import { motion, AnimatePresence } from "framer-motion"
 import { Button } from "@/components/ui/button"
 import { Sparkles, Menu, X } from "lucide-react"
 
-const APP_URL = "https://hassle-free-app.vercel.app"
+const APP_URL = "https://hassle-free-flutter.vercel.app"
 
 export function Header() {
   const [scrolled, setScrolled] = useState(false)

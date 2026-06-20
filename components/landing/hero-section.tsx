@@ -4,7 +4,7 @@ import { motion } from "framer-motion"
 import { Button } from "@/components/ui/button"
 import { ArrowRight, Sparkles, FileText, Video, Briefcase } from "lucide-react"
 
-const APP_URL = "https://hassle-free-app.vercel.app"
+const APP_URL = "https://hassle-free-flutter.vercel.app"
 
 export function HeroSection() {
   return (
