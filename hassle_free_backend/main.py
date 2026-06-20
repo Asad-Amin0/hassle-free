@@ -268,6 +268,7 @@ def health_check():
     return jsonify({"status": "healthy", "service": "Hassle-Free Resume Parser API", "port": 5002}), 200
 
 if __name__ == '__main__':
-    # Switch to port 5002 to avoid conflict with Flutter Web (often on 5000/5001)
-    print("Starting Flask server on http://localhost:5002...")
-    app.run(debug=True, host='0.0.0.0', port=5002)
+    # Railway (and other PaaS) inject a dynamic PORT environment variable.
+    port = int(os.environ.get('PORT', 5002))
+    print(f"Starting Flask server on http://0.0.0.0:{port}...")
+    app.run(debug=False, host='0.0.0.0', port=port)

@@ -1,0 +1,7 @@
+{
+    "venvPath": "hassle_free_backend",
+    "venv": ".venv",
+    "extraPaths": [
+        "hassle_free_backend/.venv/Lib/site-packages"
+    ]
+}
