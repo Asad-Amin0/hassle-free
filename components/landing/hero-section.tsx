@@ -4,6 +4,8 @@ import { motion } from "framer-motion"
 import { Button } from "@/components/ui/button"
 import { ArrowRight, Sparkles, FileText, Video, Briefcase } from "lucide-react"
 
+const APP_URL = "https://hassle-free-app.vercel.app"
+
 export function HeroSection() {
   return (
     <section className="relative min-h-screen flex items-center justify-center overflow-hidden pt-20">
@@ -74,16 +76,19 @@ export function HeroSection() {
 
             {/* CTA Buttons */}
             <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
-              <Button size="lg" className="gradient-primary text-primary-foreground group">
-                Start Your Journey
-                <ArrowRight className="ml-2 w-4 h-4 group-hover:translate-x-1 transition-transform" />
+              <Button size="lg" className="gradient-primary text-primary-foreground group" asChild>
+                <a href={APP_URL} target="_blank" rel="noopener noreferrer">
+                  Start Your Journey
+                  <ArrowRight className="ml-2 w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                </a>
               </Button>
               <Button 
                 size="lg" 
                 variant="outline" 
                 className="group"
+                asChild
               >
-                Learn More
+                <a href="#features">Learn More</a>
               </Button>
             </div>
 

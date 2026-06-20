@@ -4,6 +4,8 @@ import { motion } from "framer-motion"
 import { Button } from "@/components/ui/button"
 import { ArrowRight, Sparkles, Rocket } from "lucide-react"
 
+const APP_URL = "https://hassle-free-app.vercel.app"
+
 export function CTASection() {
   return (
     <section className="py-24 lg:py-32 relative overflow-hidden">
@@ -74,16 +76,20 @@ export function CTASection() {
               <Button 
                 size="lg" 
                 className="bg-white text-primary hover:bg-white/90 group"
+                asChild
               >
-                Get Started Free
-                <ArrowRight className="ml-2 w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                <a href={APP_URL} target="_blank" rel="noopener noreferrer">
+                  Get Started Free
+                  <ArrowRight className="ml-2 w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                </a>
               </Button>
               <Button 
                 size="lg" 
                 variant="outline"
                 className="border-2 border-white bg-transparent text-white hover:bg-white hover:text-primary font-semibold"
+                asChild
               >
-                Schedule a Demo
+                <a href={APP_URL} target="_blank" rel="noopener noreferrer">Schedule a Demo</a>
               </Button>
             </motion.div>
 

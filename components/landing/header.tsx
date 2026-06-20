@@ -6,6 +6,8 @@ import { motion, AnimatePresence } from "framer-motion"
 import { Button } from "@/components/ui/button"
 import { Sparkles, Menu, X } from "lucide-react"
 
+const APP_URL = "https://hassle-free-app.vercel.app"
+
 export function Header() {
   const [scrolled, setScrolled] = useState(false)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
@@ -61,11 +63,11 @@ export function Header() {
 
           {/* CTA Buttons */}
           <div className="hidden lg:flex items-center gap-3">
-            <Button variant="ghost" size="sm">
-              Sign In
+            <Button variant="ghost" size="sm" asChild>
+              <a href={APP_URL} target="_blank" rel="noopener noreferrer">Sign In</a>
             </Button>
-            <Button size="sm" className="gradient-primary text-primary-foreground">
-              Get Started Free
+            <Button size="sm" className="gradient-primary text-primary-foreground" asChild>
+              <a href={APP_URL} target="_blank" rel="noopener noreferrer">Get Started Free</a>
             </Button>
           </div>
 
@@ -105,11 +107,11 @@ export function Header() {
                 </Link>
               ))}
               <div className="pt-4 flex flex-col gap-2">
-                <Button variant="outline" className="w-full">
-                  Sign In
+                <Button variant="outline" className="w-full" asChild>
+                  <a href={APP_URL} target="_blank" rel="noopener noreferrer">Sign In</a>
                 </Button>
-                <Button className="w-full gradient-primary text-primary-foreground">
-                  Get Started Free
+                <Button className="w-full gradient-primary text-primary-foreground" asChild>
+                  <a href={APP_URL} target="_blank" rel="noopener noreferrer">Get Started Free</a>
                 </Button>
               </div>
             </div>
